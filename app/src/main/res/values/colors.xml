@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="white">#ffffff</color>
+    <color name="black">#000000</color>
+    <color name="tab_selected_color">#acacac</color>
+    <color name="transperant_black_bottom">#96000000</color>
+
+</resources>
