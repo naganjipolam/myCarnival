@@ -6,5 +6,5 @@
         android:id="@+id/right_menu_icon"
         android:title="@string/menu_navigation_title"
         app:showAsAction="always"
-        android:icon="@drawable/ic_drawer"/>
+        android:icon="@drawable/menu_ic"/>
 </menu>

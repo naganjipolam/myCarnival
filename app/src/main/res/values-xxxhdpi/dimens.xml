@@ -14,22 +14,19 @@
     <dimen name="band_list_item_title_margin_left">10dp</dimen>
     <dimen name="band_list_item_title_margin_top">10dp</dimen>
 
-    <dimen name="band_list_item_bottom_layout_margin_bottom">10dp</dimen>
+    <dimen name="band_list_item_bottom_layout_margin_bottom">16dp</dimen>
     <dimen name="band_list_item_bottom_layout_margin_left">10dp</dimen>
 
 
-    <dimen name="band_list_item_title_text_size">20sp</dimen>
-    <dimen name="band_list_item_sub_title_text_size">18sp</dimen>
-    <dimen name="band_list_item_time_text_size">14sp</dimen>
+    <dimen name="band_list_item_title_text_size">18sp</dimen>
+    <dimen name="band_list_item_sub_title_text_size">14sp</dimen>
+    <dimen name="band_list_item_time_text_size">12sp</dimen>
 
 
-    <dimen name="band_list_item_view_height">2dp</dimen>
+    <dimen name="band_list_item_view_height">1dp</dimen>
     <dimen name="band_list_item_view_margin_left">3dp</dimen>
     <dimen name="band_list_item_view_margin_right">7dp</dimen>
     <dimen name="band_list_item_view_margin_top">10dp</dimen>
     <dimen name="band_list_item_view_margin_bottom">10dp</dimen>
-
-
-
 
 </resources>

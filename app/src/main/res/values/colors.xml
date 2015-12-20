@@ -4,5 +4,6 @@
     <color name="black">#000000</color>
     <color name="tab_selected_color">#acacac</color>
     <color name="transperant_black_bottom">#96000000</color>
+    <color name="cancel_select_picker_color">#1e90ff</color>
 
 </resources>

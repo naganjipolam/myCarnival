@@ -18,9 +18,9 @@
     <dimen name="band_list_item_bottom_layout_margin_left">6dp</dimen>
 
 
-    <dimen name="band_list_item_title_text_size">14sp</dimen>
-    <dimen name="band_list_item_sub_title_text_size">12sp</dimen>
-    <dimen name="band_list_item_time_text_size">10sp</dimen>
+    <dimen name="band_list_item_title_text_size">12sp</dimen>
+    <dimen name="band_list_item_sub_title_text_size">10sp</dimen>
+    <dimen name="band_list_item_time_text_size">9sp</dimen>
 
 
     <dimen name="band_list_item_view_height">1dp</dimen>

@@ -2,14 +2,10 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="com.techplicit.mycarnival.CarnivalsListActivity$PlaceholderFragment">
+    tools:context="com.techplicit.mycarnival.CarnivalsListActivity$PlaceholderFragment"
+    android:background="@drawable/carnivals_bg">
 
-    <ProgressBar
-        android:id="@+id/progress_carnivals_list"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_centerInParent="true"
-        android:visibility="gone"/>
+
 
 
     <RelativeLayout
@@ -25,13 +21,13 @@
             android:layout_height="wrap_content"
             android:layout_marginLeft="@dimen/activity_horizontal_margin"
             android:padding="@dimen/activity_horizontal_margin"
-            android:src="@drawable/ic_drawer" />
+            android:src="@drawable/back_arrow" />
     </RelativeLayout>
 
     <ListView
         android:id="@+id/list_carnivals"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:layout_above="@id/layout_back"
         android:background="#000000"
         android:cacheColorHint="@android:color/transparent"
@@ -41,4 +37,10 @@
         android:paddingLeft="16dp"
         android:paddingRight="16dp" />
 
+    <ProgressBar
+        android:id="@+id/progress_carnivals_list"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        />
 </RelativeLayout>

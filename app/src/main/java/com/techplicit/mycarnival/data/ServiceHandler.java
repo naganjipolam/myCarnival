@@ -2,6 +2,8 @@ package com.techplicit.mycarnival.data;
 
 import android.util.Log;
 
+import com.techplicit.mycarnival.utils.Constants;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -17,7 +19,7 @@ import java.net.URL;
 import java.net.URLEncoder;
 import java.util.HashMap;
 
-public class ServiceHandler {
+public class ServiceHandler implements Constants{
 
     String charset = "UTF-8";
     HttpURLConnection conn;
@@ -27,7 +29,7 @@ public class ServiceHandler {
     JSONObject jObj = null;
     StringBuilder sbParams;
     String paramsString;
-
+    String responseStatus;
     public String makeHttpRequest(String url, String method,
                                       HashMap<String, String> params) {
 
@@ -45,6 +47,7 @@ public class ServiceHandler {
 
                 } catch (UnsupportedEncodingException e) {
                     e.printStackTrace();
+                    responseStatus = ERROR;
                 }
                 i++;
             }
@@ -78,6 +81,7 @@ public class ServiceHandler {
 
             } catch (IOException e) {
                 e.printStackTrace();
+                responseStatus = ERROR;
             }
         }
         else if(method.equals("GET")){
@@ -107,6 +111,7 @@ public class ServiceHandler {
 
             } catch (IOException e) {
                 e.printStackTrace();
+                responseStatus = ERROR;
             }
 
         }
@@ -125,6 +130,7 @@ public class ServiceHandler {
 
         } catch (IOException e) {
             e.printStackTrace();
+            responseStatus = ERROR;
         }
 
         conn.disconnect();
@@ -136,6 +142,10 @@ public class ServiceHandler {
         } catch (JSONException e) {
             Log.e("JSON Parser", "Error parsing data " + e.toString());
         }*/
+
+        if (responseStatus!=null && responseStatus.equalsIgnoreCase(ERROR)){
+            return responseStatus;
+        }
 
         // return JSON Object
         return result.toString();

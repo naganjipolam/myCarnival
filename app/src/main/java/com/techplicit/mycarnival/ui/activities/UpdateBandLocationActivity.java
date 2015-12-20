@@ -1,11 +1,10 @@
 package com.techplicit.mycarnival.ui.activities;
 
 import android.app.Activity;
+import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -23,16 +22,22 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
+import android.view.Window;
 import android.widget.ImageView;
 import android.widget.ListView;
+import android.widget.NumberPicker;
 import android.widget.ProgressBar;
+import android.widget.TextView;
+import android.widget.Toast;
 
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.MapFragment;
 import com.techplicit.mycarnival.NavigationDrawerFragment;
 import com.techplicit.mycarnival.R;
 import com.techplicit.mycarnival.adapters.CarnivalsListAdapter;
 import com.techplicit.mycarnival.data.CarnivalsSingleton;
 import com.techplicit.mycarnival.data.ServiceHandler;
+import com.techplicit.mycarnival.data.model.BandsPojo;
 import com.techplicit.mycarnival.data.model.CarnivalsPojo;
 import com.techplicit.mycarnival.utils.Constants;
 import com.techplicit.mycarnival.utils.Utility;
@@ -46,6 +51,12 @@ import java.util.ArrayList;
 public class UpdateBandLocationActivity extends ActionBarActivity
         implements NavigationDrawerFragment.NavigationDrawerCallbacks, Constants {
 
+    private static final int MIN_VALUE = 1;
+    private static NumberPicker bandsPicker;
+    private static String mDurationStr;
+    private static int mDurationValue;
+    private static String selectedPickerValue;
+    private static TextView selectBandText;
     /**
      * Fragment managing the behaviors, interactions and presentation of the navigation drawer.
      */
@@ -57,11 +68,17 @@ public class UpdateBandLocationActivity extends ActionBarActivity
     private CharSequence mTitle;
     private DrawerLayout drawerLayout;
     private ActionBarDrawerToggle mDrawerToggle;
-
+    private static String bandNameSelected;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_carnivals_list);
+
+        Intent i = getIntent();
+
+        if (i!=null){
+            bandNameSelected = i.getStringExtra(BAND_NAME);
+        }
 
         mNavigationDrawerFragment = (NavigationDrawerFragment)
                 getSupportFragmentManager().findFragmentById(R.id.navigation_drawer);
@@ -127,6 +144,9 @@ public class UpdateBandLocationActivity extends ActionBarActivity
                 closeDrawer();
                 mTitle = getString(R.string.title_section3);
                 break;
+            case 4:
+                closeDrawer();
+                break;
         }
     }
 
@@ -188,6 +208,7 @@ public class UpdateBandLocationActivity extends ActionBarActivity
         private static ListView carnivalsList;
         private ProgressDialog pDialog;
         private AlertDialog alertDialog;
+        private GoogleMap mMap;
 
         /**
          * Returns a new instance of this fragment for the given section
@@ -207,51 +228,15 @@ public class UpdateBandLocationActivity extends ActionBarActivity
         @Override
         public View onCreateView(LayoutInflater inflater, ViewGroup container,
                                  final Bundle savedInstanceState) {
-            View rootView = inflater.inflate(R.layout.fragment_carnivals_list, container, false);
-            carnivalsList = (ListView)rootView.findViewById(R.id.list_carnivals);
-            ProgressBar carnivalsProgress = (ProgressBar)rootView.findViewById(R.id.progress_carnivals_list);
+            View rootView = inflater.inflate(R.layout.update_band_location_fragment, container, false);
 
-
-            carnivalsList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-                @Override
-                public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                    ArrayList<CarnivalsPojo> carnivalsPojoArrayList = CarnivalsSingleton.getInstance().getCarnivalsPojoArrayList();
-                    CarnivalsPojo carnivalsPojo = (CarnivalsPojo)carnivalsPojoArrayList.get(position);
-                    if (carnivalsPojo.getActiveFlag()){
-                        Intent bandIntent = new Intent(getActivity(), BandTabsActivity.class);
-                        startActivity(bandIntent);
-                    }
-
-                    SharedPreferences sharedPreferences = getActivity().getSharedPreferences(PREFS_CARNIVAL, MODE_PRIVATE);
-                    SharedPreferences.Editor editor = sharedPreferences.edit();
-                    editor.putString(SELECTED_CARNIVAL_NAME, carnivalsPojo.getName());
-                    editor.commit();
-                    Log.e("Siva", "SELECTED_CARNIVAL_NAME--> "+carnivalsPojo.getName());
-
-                }
-            });
+            displayUpdateLocationDialog(getActivity());
 
             if (Utility.isNetworkConnectionAvailable(getActivity())){
 //                carnivalsProgress.setVisibility(View.GONE);
-                new GetAsync(getActivity().getApplicationContext(), carnivalsProgress).execute();
+//                new GetAsync(getActivity().getApplicationContext(), null).execute();
             }else{
-                carnivalsProgress.setVisibility(View.VISIBLE);
-                AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(getContext(), R.style.DialogTheme);
-                alertDialogBuilder.setMessage(getResources().getString(R.string.network_fail_message));
-                alertDialogBuilder.setTitle(getResources().getString(R.string.network_status));
-                alertDialogBuilder.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface arg0, int arg1) {
-                        if (alertDialog != null) {
-                            alertDialog.dismiss();
-                            getActivity().finish();
-                        }
-                    }
-                });
-
-                alertDialog = alertDialogBuilder.create();
-                alertDialog.show();
-
+                Utility.displayNetworkFailDialog(getActivity(), NETWORK_FAIL);
             }
 
 
@@ -273,6 +258,29 @@ public class UpdateBandLocationActivity extends ActionBarActivity
             ((UpdateBandLocationActivity) activity).onSectionAttached(
                     getArguments().getInt(ARG_SECTION_NUMBER));
         }
+
+        private void setUpMap() {
+            // Do a null check to confirm that we have not already instantiated the map.
+            if (mMap == null) {
+                // Try to obtain the map from the SupportMapFragment.
+                mMap = ((MapFragment) getActivity().getFragmentManager().findFragmentById(R.id.map)).getMap();
+
+                // Check if we were successful in obtaining the map.
+
+                if (mMap != null) {
+                    mMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
+                        @Override
+                        public boolean onMarkerClick(com.google.android.gms.maps.model.Marker marker) {
+                            marker.showInfoWindow();
+                            return true;
+                        }
+                    });
+                } else {
+                    Toast.makeText(getActivity(), "Unable to create Maps", Toast.LENGTH_SHORT).show();
+                }
+            }
+        }
+
 
 
         static class GetAsync extends AsyncTask<String, String, JSONArray> {
@@ -389,7 +397,99 @@ public class UpdateBandLocationActivity extends ActionBarActivity
 
     }
 
+    private static void displayUpdateLocationDialog(final Activity context){
+        Dialog dialog = new Dialog(context);
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        dialog.setContentView(R.layout.dialog_update_location);
+//        dialog.setCancelable(false);
 
+        selectBandText = (TextView)dialog.findViewById(R.id.text_select_band);
+        ImageView selectBandImage = (ImageView)dialog.findViewById(R.id.image_select_band);
 
+        if (bandNameSelected!=null){
+            selectBandText.setText(bandNameSelected);
+        }
+        selectBandText.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                displayDurationDialog(context);
+            }
+        });
+
+        selectBandImage.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                displayDurationDialog(context);
+            }
+        });
+
+        dialog.show();
+
+    }
+
+    private static void displayDurationDialog(Context context) {
+
+        final Dialog mDurationDialog = new Dialog(context);
+        mDurationDialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        mDurationDialog.setContentView(R.layout.dialog_band_picker);
+//        mDurationDialog.setCancelable(false);
+
+        bandsPicker = (NumberPicker) mDurationDialog.findViewById(R.id.band_picker);
+        TextView selectPicker = (TextView) mDurationDialog.findViewById(R.id.select_band_picker);
+        TextView cancelPicker = (TextView) mDurationDialog.findViewById(R.id.cancel_band_picker);
+
+        bandsPicker.setDescendantFocusability(NumberPicker.FOCUS_BLOCK_DESCENDANTS);
+
+        final ArrayList<BandsPojo> carnivalsPojoArrayList = CarnivalsSingleton.getInstance().getBandsPojoArrayList();
+        final ArrayList<String> listBands = new ArrayList<String>();
+        for (int i = 0; i<carnivalsPojoArrayList.size(); i++){
+            BandsPojo carnivalsPojo = (BandsPojo)carnivalsPojoArrayList.get(i);
+            listBands.add(carnivalsPojo.getName());
+        }
+
+        selectPicker.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mDurationDialog.dismiss();
+                bandNameSelected = ""+listBands.get(mDurationValue - 1);
+
+            }
+        });
+
+        cancelPicker.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mDurationDialog.dismiss();
+
+            }
+        });
+
+        String[] textDurationValues = new String[listBands.size()];
+        textDurationValues = listBands.toArray(textDurationValues);
+
+        bandsPicker.setMinValue(MIN_VALUE);
+        bandsPicker.setMaxValue(listBands.size());
+        bandsPicker.setWrapSelectorWheel(false);
+        bandsPicker.setDisplayedValues(textDurationValues);
+        bandsPicker.setOnValueChangedListener(new NumberPicker.OnValueChangeListener() {
+
+            @Override
+            public void onValueChange(NumberPicker picker, int oldVal, int newVal) {
+                bandsPicker.getContentDescription();
+                mDurationValue = newVal;
+                bandNameSelected = listBands.get(newVal - 1);
+                if (bandNameSelected!=null){
+                    selectBandText.setText(bandNameSelected);
+                }
+
+//                mDurationDialog.setTitle("[" + String.valueOf(mNumberPickerValues[mNumbersValue - 1]) + " " + mConditionsList.get(mDurationValue - 1) + "]");
+
+            }
+        });
+
+//        bandsPicker.setValue(mDurationValue);
+
+        mDurationDialog.show();
+    }
 
 }

@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -19,6 +20,7 @@ import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
+import com.techplicit.mycarnival.IntentGenerator;
 import com.techplicit.mycarnival.R;
 import com.techplicit.mycarnival.adapters.BandsGridAdapter;
 import com.techplicit.mycarnival.adapters.CarnivalsListAdapter;
@@ -26,6 +28,8 @@ import com.techplicit.mycarnival.data.CarnivalsSingleton;
 import com.techplicit.mycarnival.data.ServiceHandler;
 import com.techplicit.mycarnival.data.model.BandsPojo;
 import com.techplicit.mycarnival.data.model.CarnivalsPojo;
+import com.techplicit.mycarnival.ui.activities.BandTabsActivity;
+import com.techplicit.mycarnival.ui.activities.UpdateBandLocationActivity;
 import com.techplicit.mycarnival.utils.Constants;
 import com.techplicit.mycarnival.utils.Utility;
 
@@ -68,15 +72,16 @@ public class BandsAlphaSortFragment extends Fragment implements Constants{
             View rootView = inflater.inflate(R.layout.fragment_bands_list, container, false);
             carnivalsList = (ListView)rootView.findViewById(R.id.list_carnivals);
             ProgressBar carnivalsProgress = (ProgressBar)rootView.findViewById(R.id.progress_carnivals_list);
+            carnivalsProgress.getIndeterminateDrawable().setColorFilter(0xFFFF0000, android.graphics.PorterDuff.Mode.MULTIPLY);
 
 
             carnivalsList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                 @Override
                 public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                    ArrayList<CarnivalsPojo> carnivalsPojoArrayList = CarnivalsSingleton.getInstance().getCarnivalsPojoArrayList();
-                    CarnivalsPojo carnivalsPojo = (CarnivalsPojo)carnivalsPojoArrayList.get(position);
+                    ArrayList<BandsPojo> carnivalsPojoArrayList = CarnivalsSingleton.getInstance().getBandsPojoArrayList();
+                    BandsPojo carnivalsPojo = (BandsPojo)carnivalsPojoArrayList.get(position);
                     if (carnivalsPojo.getActiveFlag()){
-                        Toast.makeText(getActivity().getApplicationContext(), "True", Toast.LENGTH_SHORT).show();
+                        IntentGenerator.startUpdateBandLocation(getActivity().getApplicationContext(), position, carnivalsPojo.getName());
                     }else{
                         Toast.makeText(getActivity().getApplicationContext(), "False", Toast.LENGTH_SHORT).show();
                     }
@@ -85,36 +90,12 @@ public class BandsAlphaSortFragment extends Fragment implements Constants{
 
             if (Utility.isNetworkConnectionAvailable(getActivity())){
 //                carnivalsProgress.setVisibility(View.GONE);
-                new GetAsync(getActivity().getApplicationContext(), carnivalsProgress).execute();
+                new GetAsync(getActivity(), carnivalsProgress).execute();
             }else{
                 carnivalsProgress.setVisibility(View.VISIBLE);
-                AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(getContext(), R.style.DialogTheme);
-                alertDialogBuilder.setMessage(getResources().getString(R.string.network_fail_message));
-                alertDialogBuilder.setTitle(getResources().getString(R.string.network_status));
-                alertDialogBuilder.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface arg0, int arg1) {
-                        if (alertDialog != null) {
-                            alertDialog.dismiss();
-                            getActivity().finish();
-                        }
-                    }
-                });
-
-                alertDialog = alertDialogBuilder.create();
-                alertDialog.show();
+                Utility.displayNetworkFailDialog(getActivity(), NETWORK_FAIL);
 
             }
-
-
-
-            /*ImageView backArrowCarnivalsList = (ImageView)rootView.findViewById(R.id.back_arrow_carnivals_list);
-            backArrowCarnivalsList.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    getActivity().finish();
-                }
-            });*/
 
             return rootView;
         }
@@ -141,8 +122,11 @@ public class BandsAlphaSortFragment extends Fragment implements Constants{
             private static final String TAG_MESSAGE = "message";
             private ArrayList<BandsPojo> quizModelArrayList;
 
-            private Context mContext;
-            public GetAsync(Context context, ProgressBar carnivalsProgress) {
+            private Activity mContext;
+            private String responseStatus;
+            private String jsonData;
+
+            public GetAsync(Activity context, ProgressBar carnivalsProgress) {
                 mContext = context;
                 this.carnivalsProgress = carnivalsProgress;
             }
@@ -173,27 +157,30 @@ public class BandsAlphaSortFragment extends Fragment implements Constants{
                     }else if (selectedCarnivalName.contains(" ")){
                         selectedCarnivalNameTrimmed = selectedCarnivalName.replace(" ", "%20").trim();
                     }
-                        String jsonData = jsonParser.makeHttpRequest(
+
+                    responseStatus = jsonParser.makeHttpRequest(
                             BANDS_URL+selectedCarnivalNameTrimmed, "GET", null);
 
-                    Log.e("Siva", "selectedCarnivalName --> "+selectedCarnivalName);
-                    Log.e("Siva", "URL --> "+BANDS_URL+selectedCarnivalNameTrimmed);
 
-                    JSONArray jsonArray = null;
-
-                    jsonArray = new JSONArray(jsonData);
+                    if (responseStatus!=null && !responseStatus.equalsIgnoreCase(ERROR)){
+                        jsonData = jsonParser.makeHttpRequest(
+                                BANDS_URL+selectedCarnivalNameTrimmed, "GET", null);
 
 
+                        JSONArray jsonArray = null;
 
-                    if (jsonArray != null) {
-                        Log.d("JSON result", jsonArray.toString());
+                        jsonArray = new JSONArray(jsonData);
 
-                        return jsonArray;
+                        if (jsonArray != null) {
+                            Log.d("JSON result", jsonArray.toString());
+
+                            return jsonArray;
+                        }
                     }
 
                 } catch (Exception e) {
                     e.printStackTrace();
-                    isResponseSucceed = false;
+                    responseStatus = ERROR;
                 }
 
                 return null;
@@ -205,15 +192,12 @@ public class BandsAlphaSortFragment extends Fragment implements Constants{
                 String message = "";
 
                 JSONObject jsonObject = null;
+
+                if (responseStatus.equalsIgnoreCase(ERROR)){
+                    Utility.displayNetworkFailDialog(mContext, ERROR);
+                }
+
                 if (jsonArray != null) {
-                /*for (int i=0; i<jsonArray.length();i++ ){
-                    try {
-                        jsonObject = (JSONObject)jsonArray.get(i);
-                    } catch (JSONException e) {
-                        e.printStackTrace();
-                        isResponseSucceed = false;
-                    }
-                }*/
 
                     CarnivalsSingleton.getInstance().setBandsJsonResponse(jsonArray);
 

@@ -2,6 +2,7 @@ package com.techplicit.mycarnival;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.graphics.Color;
 import android.support.v7.app.ActionBarActivity;
 import android.support.v7.app.ActionBar;
 import android.support.v4.app.Fragment;
@@ -48,11 +49,13 @@ public class MainActivity extends ActionBarActivity
 
         Toolbar toolbar = (Toolbar)findViewById(R.id.app_bar);
         setSupportActionBar(toolbar);
-        toolbar.setNavigationIcon(R.drawable.ic_drawer);
+        /*toolbar.setNavigationIcon(R.drawable.app_icon);
         toolbar.setTitle(getResources().getString(R.string.home_title));
+        toolbar.setTitleTextColor(Color.WHITE);*/
+        toolbar.setTitle("");
         getSupportActionBar().setDisplayHomeAsUpEnabled(false);
         getSupportActionBar().setHomeButtonEnabled(false);
-
+        getSupportActionBar().setTitle("");
 
 //        ImageView menuNavigationRight = (ImageView)findViewById(R.id.right_menu_icon);
 
@@ -112,17 +115,20 @@ public class MainActivity extends ActionBarActivity
             case 1:
                 closeDrawer();
                 mTitle = getString(R.string.title_section1);
-                Toast.makeText(getApplicationContext(), getResources().getStringArray(R.array.navigation_menu_items)[0],Toast.LENGTH_SHORT).show();
+
                 break;
             case 2:
                 closeDrawer();
-                Toast.makeText(getApplicationContext(), getResources().getStringArray(R.array.navigation_menu_items)[1],Toast.LENGTH_SHORT).show();
+
                 mTitle = getString(R.string.title_section2);
                 break;
             case 3:
                 closeDrawer();
-                Toast.makeText(getApplicationContext(), getResources().getStringArray(R.array.navigation_menu_items)[2],Toast.LENGTH_SHORT).show();
+
                 mTitle = getString(R.string.title_section3);
+                break;
+            case 4:
+                closeDrawer();
                 break;
         }
     }

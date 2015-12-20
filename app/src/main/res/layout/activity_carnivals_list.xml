@@ -4,7 +4,8 @@
     android:id="@+id/drawer_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="com.techplicit.mycarnival.CarnivalsListActivity">
+    tools:context="com.techplicit.mycarnival.CarnivalsListActivity"
+    android:background="@color/black">
 
     <!-- As the main content view, the view below consumes the entire
          space available using match_parent in both dimensions. -->
@@ -27,21 +28,22 @@
                 android:layout_alignParentLeft="true"
                 android:layout_centerVertical="true"
                 android:layout_marginLeft="@dimen/activity_horizontal_margin"
-                android:src="@drawable/ic_drawer" />
+                android:src="@drawable/app_icon" />
 
-            <ImageView
+            <!--<ImageView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_alignParentRight="true"
                 android:layout_centerVertical="true"
                 android:layout_marginRight="@dimen/activity_horizontal_margin"
-                android:src="@drawable/ic_drawer" />
+                android:src="@drawable/menu_ic" />-->
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_centerInParent="true"
-                android:text="@string/carnivals_title" />
+                android:text="@string/carnivals_title"
+                android:textColor="@color/white"/>
 
         </RelativeLayout>
 

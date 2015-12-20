@@ -15,15 +15,30 @@
     <string name="home_title">FESTIA</string>
 
     <string-array name="navigation_menu_items">
-        <item>1</item>
-        <item>2</item>
-        <item>3</item>
-        <item>4</item>
+        <item>My Profile</item>
+        <item>About</item>
+        <item>Contact</item>
+        <item>Sign IN</item>
     </string-array>
 
     <string name="carnivals_title">CARNIVALS</string>
     <string name="bands_title">Band Location</string>
     <string name="menu_navigation_title">Navigation Menu</string>
+
     <string name="network_status">Network Fail</string>
-    <string name="network_fail_message">You don\'t have network connection. Please connect and try again</string>
+    <string name="network_fail_message">You don\'t have network connection. Please connect and try again!</string>
+
+    <string name="error_status">Bad Response</string>
+    <string name="error_message">Some thing went wrong with your request. Please try again!</string>
+
+    <string name="update_location_dialog_title">UPDATE YOUR LOCATION</string>
+    <string name="band">BAND</string>
+    <string name="select_band">Select Band</string>
+    <string name="select">Select</string>
+    <string name="cancel">Cancel</string>
+    <string name="fetes">FETES</string>
+    <string name="bands">BANDS</string>
+    <string name="band_location">BAND LOCATION</string>
+    <string name="band_update">BAND UPDATE</string>
+    <string name="smart_update">SMART UPDATE</string>
 </resources>

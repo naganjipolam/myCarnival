@@ -12,6 +12,7 @@ import android.widget.TextView;
 
 import com.techplicit.mycarnival.R;
 import com.techplicit.mycarnival.data.model.BandsPojo;
+import com.techplicit.mycarnival.utils.BandsDateFormatsConverter;
 import com.techplicit.mycarnival.utils.Constants;
 import com.techplicit.mycarnival.utils.ImageLoader;
 import com.techplicit.mycarnival.utils.RoundedCornersImage;
@@ -21,6 +22,7 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 
 
@@ -77,28 +79,35 @@ public class BandsGridAdapter extends BaseAdapter implements Constants {
 
         bandsPojo = (BandsPojo)this.bandsPojoArrayList.get(position);
 
-        DateFormat df = new SimpleDateFormat("MM/dd/yyyy hh:mm:ss");
-        Date oldDate = null;
+        String lastAccessOn = Utility.getDate(Long.valueOf(bandsPojo.getLastUpdated()), "MM/dd/yyyy HH:mm:ss");
+
+        Log.e("Siva", "lastAccessOn --> " +lastAccessOn);
+
+        SimpleDateFormat format = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
+        Calendar c = Calendar.getInstance();
+        String currentDate = format.format(c.getTime());
+        Log.e("Siva", "currentDate --> " +currentDate);
+        Date d1 = new Date();
+        Date d2 = null;
+
         try {
-            oldDate = df.parse("12/11/2015 18:30:00");
+            d1 = format.parse(currentDate);
+            d2 = format.parse(lastAccessOn);
         } catch (ParseException e) {
             e.printStackTrace();
         }
 
-        long l = System.currentTimeMillis() - oldDate.getTime();
+        // in milliseconds
+        long diff = d1.getTime() - d2.getTime();
 
-        Log.e("Siva", "l-->" +l);
+        String lastUpdateStatus = BandsDateFormatsConverter.printDateDifferenceInUIWithDefinedFormat(diff);
 
-        /*String startDate = Utility.getDate(Long.valueOf(bandsPojo.getStartDate()), "dd/MM/yyyy");
-
-        if (startDate!=null && startDate.contains("/")){
-            strArr = startDate.split("/");
-            startMonth = Utility.getMonth(Integer.valueOf(strArr[1]));
+        if (lastUpdateStatus!=null && !lastUpdateStatus.equalsIgnoreCase("")){
+            holder.timeBand.setText(lastUpdateStatus);
         }
 
 
-
-
+/*
         String endDate = Utility.getDate(Long.valueOf(bandsPojo.getEndDate()), "dd/MM/yyyy");
 
         if (endDate!=null && endDate.contains("/")){

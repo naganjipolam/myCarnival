@@ -23,6 +23,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.support.v4.widget.DrawerLayout;
+import android.view.Window;
 import android.widget.AdapterView;
 import android.widget.ImageView;
 import android.widget.ListView;
@@ -59,7 +60,16 @@ public class CarnivalsListActivity extends ActionBarActivity
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // Hide the Title bar of this activity screen
+        getWindow().requestFeature(Window.FEATURE_NO_TITLE);
+        requestWindowFeature(Window.FEATURE_NO_TITLE);
         super.onCreate(savedInstanceState);
+
+//        requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
+//        setSupportProgressBarIndeterminateVisibility(false);
+
+
+
         setContentView(R.layout.activity_carnivals_list);
 
         mNavigationDrawerFragment = (NavigationDrawerFragment)
@@ -116,15 +126,15 @@ public class CarnivalsListActivity extends ActionBarActivity
         switch (number) {
             case 1:
                 closeDrawer();
-                mTitle = getString(R.string.title_section1);
                 break;
             case 2:
                 closeDrawer();
-                mTitle = getString(R.string.title_section2);
                 break;
             case 3:
                 closeDrawer();
-                mTitle = getString(R.string.title_section3);
+                break;
+            case 4:
+                closeDrawer();
                 break;
         }
     }
@@ -201,6 +211,7 @@ public class CarnivalsListActivity extends ActionBarActivity
         }
 
         public PlaceholderFragment() {
+
         }
 
         @Override
@@ -209,7 +220,8 @@ public class CarnivalsListActivity extends ActionBarActivity
             View rootView = inflater.inflate(R.layout.fragment_carnivals_list, container, false);
             carnivalsList = (ListView)rootView.findViewById(R.id.list_carnivals);
             ProgressBar carnivalsProgress = (ProgressBar)rootView.findViewById(R.id.progress_carnivals_list);
-
+            carnivalsProgress.setVisibility(View.VISIBLE);
+            carnivalsProgress.getIndeterminateDrawable().setColorFilter(0xFFFF0000, android.graphics.PorterDuff.Mode.MULTIPLY);
 
             carnivalsList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                 @Override
@@ -232,25 +244,10 @@ public class CarnivalsListActivity extends ActionBarActivity
 
             if (Utility.isNetworkConnectionAvailable(getActivity())){
 //                carnivalsProgress.setVisibility(View.GONE);
-                new GetAsync(getActivity().getApplicationContext(), carnivalsProgress).execute();
+                new GetAsync(getActivity(), carnivalsProgress).execute();
             }else{
                 carnivalsProgress.setVisibility(View.VISIBLE);
-                AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(getContext(), R.style.DialogTheme);
-                alertDialogBuilder.setMessage(getResources().getString(R.string.network_fail_message));
-                alertDialogBuilder.setTitle(getResources().getString(R.string.network_status));
-                alertDialogBuilder.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface arg0, int arg1) {
-                        if (alertDialog != null) {
-                            alertDialog.dismiss();
-                            getActivity().finish();
-                        }
-                    }
-                });
-
-                alertDialog = alertDialogBuilder.create();
-                alertDialog.show();
-
+                Utility.displayNetworkFailDialog(getActivity(), NETWORK_FAIL);
             }
 
 
@@ -288,8 +285,11 @@ public class CarnivalsListActivity extends ActionBarActivity
             private static final String TAG_MESSAGE = "message";
             private ArrayList<CarnivalsPojo> quizModelArrayList;
 
-            private Context mContext;
-            public GetAsync(Context context, ProgressBar carnivalsProgress) {
+            private Activity mContext;
+            private String responseStatus;
+            private String jsonData;
+
+            public GetAsync(Activity context, ProgressBar carnivalsProgress) {
                 mContext = context;
                 this.carnivalsProgress = carnivalsProgress;
             }
@@ -304,30 +304,28 @@ public class CarnivalsListActivity extends ActionBarActivity
 
                 try {
 
-//                HashMap<String, String> params = new HashMap<>();
-//                params.put("name", args[0]);
-//                params.put("password", args[1]);
-//
-//                Log.d("request", "starting");
-
-                    String jsonData = jsonParser.makeHttpRequest(
+                    responseStatus = jsonParser.makeHttpRequest(
                             CARNIVALS_URL, "GET", null);
+                    Log.d("Siva", "CARNIVALS_URL---> "+CARNIVALS_URL);
+                    if (responseStatus!=null && !responseStatus.equalsIgnoreCase(ERROR)){
+                        jsonData = jsonParser.makeHttpRequest(
+                                CARNIVALS_URL, "GET", null);
 
-                    JSONArray jsonArray = null;
+                        JSONArray jsonArray = null;
 
-                    jsonArray = new JSONArray(jsonData);
+                        jsonArray = new JSONArray(jsonData);
 
+                        if (jsonArray != null) {
+                            Log.d("JSON result", jsonArray.toString());
 
-
-                    if (jsonArray != null) {
-                        Log.d("JSON result", jsonArray.toString());
-
-                        return jsonArray;
+                            return jsonArray;
+                        }
                     }
+
 
                 } catch (Exception e) {
                     e.printStackTrace();
-                    isResponseSucceed = false;
+                    responseStatus = ERROR;
                 }
 
                 return null;
@@ -335,19 +333,11 @@ public class CarnivalsListActivity extends ActionBarActivity
 
             protected void onPostExecute(JSONArray jsonArray) {
 
-                int success = 0;
-                String message = "";
+                if (responseStatus.equalsIgnoreCase(ERROR)){
+                    Utility.displayNetworkFailDialog(mContext, ERROR);
+                }
 
-                JSONObject jsonObject = null;
                 if (jsonArray != null) {
-                /*for (int i=0; i<jsonArray.length();i++ ){
-                    try {
-                        jsonObject = (JSONObject)jsonArray.get(i);
-                    } catch (JSONException e) {
-                        e.printStackTrace();
-                        isResponseSucceed = false;
-                    }
-                }*/
 
                     CarnivalsSingleton.getInstance().setCarnivalsJsonResponse(jsonArray);
 
@@ -359,28 +349,6 @@ public class CarnivalsListActivity extends ActionBarActivity
                     }
                 }
 
-
-//            if (pDialog != null && pDialog.isShowing()) {
-//                pDialog.dismiss();
-//            }
-
-            /*if (json != null) {
-//                Toast.makeText(getApplicationContext(), json.toString(),
-//                        Toast.LENGTH_LONG).show();
-                Log.e("Siva", "JSON---> "+json.toString());
-                try {
-                    success = json.getInt(TAG_SUCCESS);
-                    message = json.getString(TAG_MESSAGE);
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
-            }*/
-
-                if (success == 1) {
-                    Log.d("Success!", message);
-                }else{
-                    Log.d("Failure", message);
-                }
             }
 
         }

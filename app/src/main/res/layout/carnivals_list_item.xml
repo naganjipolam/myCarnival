@@ -3,14 +3,17 @@
     android:layout_width="match_parent"
     android:layout_height="150dp"
     android:layout_margin="10dp"
-    android:padding="5dp">
+    android:padding="5dp"
+    >
 
     <ImageView
         android:id="@+id/image_carnival"
         android:layout_width="match_parent"
         android:layout_height="150dp"
         android:scaleType="fitXY"
-        android:src="@drawable/cayman_island_small"/>
+        android:src="@drawable/cayman_island_small"
+        android:background="@drawable/rounded_image_style"
+        android:padding="2dp"/>
     <TextView
         android:id="@+id/title_carnival_list"
         android:layout_width="match_parent"
@@ -18,10 +21,10 @@
         android:text="Miami-Broward One"
         android:padding="16dp"
         android:textColor="@color/white"
-        android:textStyle="bold"
         android:textSize="20sp"/>
 
     <View
+        android:id="@+id/view"
         android:layout_width="match_parent"
         android:layout_height="2dp"
         android:background="@color/white"
@@ -33,12 +36,11 @@
         android:id="@+id/date_carnival_list"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="16dp"
+        android:layout_marginTop="30dp"
         android:textColor="@color/white"
-        android:textStyle="bold"
         android:textSize="20sp"
-        android:layout_alignParentBottom="true"
         android:layout_alignParentRight="true"
         android:layout_marginRight="25dp"
-        android:text="Hello"/>
+        android:text="Hello"
+        android:layout_below="@+id/view"/>
 </RelativeLayout>

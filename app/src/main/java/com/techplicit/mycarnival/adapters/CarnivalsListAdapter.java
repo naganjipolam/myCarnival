@@ -102,10 +102,10 @@ public class CarnivalsListAdapter extends BaseAdapter implements Constants {
             bitmap = imageLoader.DisplayImage(carnivalsPojo.getImage(), holder.galleryImage);
         }
 
-//        if (bitmap!=null){
-//            Bitmap circularBitmap = RoundedCornersImage.getRoundedCornerBitmap(bitmap);
-//            holder.galleryImage.setImageBitmap(circularBitmap);
-//        }
+        if (bitmap!=null){
+            Bitmap circularBitmap = RoundedCornersImage.getRoundedCornerBitmap(bitmap);
+            holder.galleryImage.setImageBitmap(circularBitmap);
+        }
 
         return rootView;
     }

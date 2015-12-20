@@ -23,7 +23,7 @@
     <dimen name="band_list_item_time_text_size">10sp</dimen>
 
 
-    <dimen name="band_list_item_view_height">2dp</dimen>
+    <dimen name="band_list_item_view_height">1dp</dimen>
     <dimen name="band_list_item_view_margin_left">3dp</dimen>
     <dimen name="band_list_item_view_margin_right">5dp</dimen>
     <dimen name="band_list_item_view_margin_top">6dp</dimen>

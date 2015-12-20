@@ -9,10 +9,10 @@
         <!-- Customize your theme here. -->
     </style>
 
-    <style name="DialogTheme" parent="Base.V7.Theme.AppCompat.Light.Dialog">
-        <!-- Customize your theme here. -->
+    <!--<style name="DialogTheme" parent="Base.V7.Theme.AppCompat.Light.Dialog">
+        &lt;!&ndash; Customize your theme here. &ndash;&gt;
         <item name="android:background">@color/white</item>
-    </style>
+    </style>-->
 
     <style name="NavigationTab" parent="Widget.Design.TabLayout">
         <item name="tabBackground">@color/transperant_black_bottom</item>

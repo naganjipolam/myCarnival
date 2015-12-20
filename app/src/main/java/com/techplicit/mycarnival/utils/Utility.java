@@ -1,8 +1,13 @@
 package com.techplicit.mycarnival.utils;
 
+import android.app.Activity;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.support.v7.app.AlertDialog;
+
+import com.techplicit.mycarnival.R;
 
 import java.text.DateFormatSymbols;
 import java.text.SimpleDateFormat;
@@ -11,7 +16,9 @@ import java.util.Calendar;
 /**
  * Created by pnaganjane001 on 17/12/15.
  */
-public class Utility {
+public class Utility implements Constants{
+
+    private static AlertDialog alertDialog;
 
     // added as an instance method to an Activity
     public static boolean isNetworkConnectionAvailable(Context context) {
@@ -35,5 +42,31 @@ public class Utility {
         Calendar calendar = Calendar.getInstance();
         calendar.setTimeInMillis(milliSeconds);
         return formatter.format(calendar.getTime());
+    }
+
+    public static void displayNetworkFailDialog(final Activity context, String type){
+        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(context);
+
+        if (type.equalsIgnoreCase(NETWORK_FAIL)){
+            alertDialogBuilder.setMessage(context.getResources().getString(R.string.network_fail_message));
+            alertDialogBuilder.setTitle(context.getResources().getString(R.string.network_status));
+        } else if (type.equalsIgnoreCase(ERROR)){
+            alertDialogBuilder.setMessage(context.getResources().getString(R.string.error_message));
+            alertDialogBuilder.setTitle(context.getResources().getString(R.string.error_status));
+        }
+
+        final AlertDialog.Builder ok = alertDialogBuilder.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface arg0, int arg1) {
+                if (alertDialog != null) {
+                    alertDialog.dismiss();
+                    context.finish();
+                }
+            }
+        });
+
+        alertDialog = alertDialogBuilder.create();
+        alertDialog.setCanceledOnTouchOutside(false);
+        alertDialog.show();
     }
 }

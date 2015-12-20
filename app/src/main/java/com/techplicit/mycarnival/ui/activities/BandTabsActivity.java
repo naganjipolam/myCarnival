@@ -16,8 +16,10 @@ import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Button;
 import android.widget.ImageView;
 
+import com.techplicit.mycarnival.IntentGenerator;
 import com.techplicit.mycarnival.NavigationDrawerFragment;
 import com.techplicit.mycarnival.R;
 import com.techplicit.mycarnival.adapters.BandsTabsPageAdapter;
@@ -50,12 +52,14 @@ public class BandTabsActivity extends AppCompatActivity
     private String[] tabs = { "Top Rated", "Games", "Movies" };
     private int[] tabIcons = {
             R.drawable.ic_drawer,
-            R.drawable.ic_drawer,
-            R.drawable.ic_drawer,
+            R.drawable.alpha_sort,
+            R.drawable.fav,
             R.drawable.ic_drawer
     };
     private TabLayout tabLayout;
-
+    private Button btnFetes, btnBands,btnBandLocation, btnBandUpdate, btnSmartUpdate;
+    private int bandPosition;
+    private String bandName;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,7 +70,13 @@ public class BandTabsActivity extends AppCompatActivity
                 getSupportFragmentManager().findFragmentById(R.id.navigation_drawer);
         mTitle = getTitle();
 
-        Toolbar toolbar = (Toolbar)findViewById(R.id.toolbar);
+        btnFetes = (Button)findViewById(R.id.fetes_button_hs);
+        btnBands = (Button)findViewById(R.id.band_button_hs);
+        btnBandLocation = (Button)findViewById(R.id.band_location_button_hs);
+        btnBandUpdate = (Button)findViewById(R.id.band_update_button_hs);
+        btnSmartUpdate = (Button)findViewById(R.id.smart_update_button_hs);
+
+        Toolbar toolbar = (Toolbar)findViewById(R.id.app_bar);
         setSupportActionBar(toolbar);
         toolbar.setNavigationIcon(R.drawable.ic_drawer);
         getSupportActionBar().setDisplayHomeAsUpEnabled(false);
@@ -105,19 +115,40 @@ public class BandTabsActivity extends AppCompatActivity
             }
         });
 
-        //Tabs related
-        /*viewPager = (ViewPager) findViewById(R.id.viewpager);
-        mAdapter = new BandsTabsPageAdapter(getSupportFragmentManager());
+        btnFetes.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
 
-        viewPager.setAdapter(mAdapter);
-        getActionBar().setHomeButtonEnabled(false);
-        getActionBar().setNavigationMode(android.app.ActionBar.NAVIGATION_MODE_TABS);
+            }
+        });
 
-        // Adding Tabs
-        for (String tab_name : tabs) {
-            getActionBar().addTab(getActionBar().newTab().setText(tab_name)
-                    .setTabListener(this));
-        }*/
+        btnBands.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+            }
+        });
+
+        btnBandLocation.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+            }
+        });
+
+        btnBandUpdate.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                IntentGenerator.startUpdateBandLocation(getApplicationContext(), -1, null);
+            }
+        });
+
+        btnSmartUpdate.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+//                IntentGenerator.startUpdateBandLocation(getApplicationContext(), -1, null);
+            }
+        });
 
     }
 
@@ -158,6 +189,9 @@ public class BandTabsActivity extends AppCompatActivity
             case 3:
                 closeDrawer();
                 mTitle = getString(R.string.title_section3);
+                break;
+            case 4:
+                closeDrawer();
                 break;
         }
     }
