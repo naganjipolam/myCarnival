@@ -65,7 +65,7 @@ public class CarnivalsListAdapter extends BaseAdapter implements Constants {
         final ViewHolder holder = new ViewHolder();
         final View rootView;
         rootView = inflater.inflate(R.layout.carnivals_list_item, null);
-        holder.galleryImage = (ImageView)rootView.findViewById(R.id.image_carnival);
+        holder.galleryImage = (com.github.siyamed.shapeimageview.RoundedImageView)rootView.findViewById(R.id.image_carnival);
 //        holder.galleryImage.setImageResource(galleryImages[position]);
 
         holder.titleCarnival = (TextView)rootView.findViewById(R.id.title_carnival_list);
@@ -111,7 +111,7 @@ public class CarnivalsListAdapter extends BaseAdapter implements Constants {
     }
 
     public class ViewHolder{
-        ImageView galleryImage;
+        com.github.siyamed.shapeimageview.RoundedImageView galleryImage;
         TextView titleCarnival;
         TextView dateCarnival;
     }

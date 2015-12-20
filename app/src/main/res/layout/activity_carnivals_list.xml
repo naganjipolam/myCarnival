@@ -28,7 +28,8 @@
                 android:layout_alignParentLeft="true"
                 android:layout_centerVertical="true"
                 android:layout_marginLeft="@dimen/activity_horizontal_margin"
-                android:src="@drawable/app_icon" />
+                android:src="@drawable/app_icon"
+                android:id="@+id/home_icon"/>
 
             <!--<ImageView
                 android:layout_width="wrap_content"
@@ -39,6 +40,7 @@
                 android:src="@drawable/menu_ic" />-->
 
             <TextView
+                android:id="@+id/title"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_centerInParent="true"

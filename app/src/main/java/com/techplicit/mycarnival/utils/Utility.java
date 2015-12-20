@@ -3,6 +3,7 @@ package com.techplicit.mycarnival.utils;
 import android.app.Activity;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.location.Location;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.support.v7.app.AlertDialog;
@@ -16,7 +17,7 @@ import java.util.Calendar;
 /**
  * Created by pnaganjane001 on 17/12/15.
  */
-public class Utility implements Constants{
+public class Utility implements Constants {
 
     private static AlertDialog alertDialog;
 
@@ -30,11 +31,10 @@ public class Utility implements Constants{
     }
 
     public static String getMonth(int month) {
-        return new DateFormatSymbols().getMonths()[month-1];
+        return new DateFormatSymbols().getMonths()[month - 1];
     }
 
-    public static String getDate(long milliSeconds, String dateFormat)
-    {
+    public static String getDate(long milliSeconds, String dateFormat) {
         // Create a DateFormatter object for displaying date in specified format.
         SimpleDateFormat formatter = new SimpleDateFormat(dateFormat);
 
@@ -44,13 +44,13 @@ public class Utility implements Constants{
         return formatter.format(calendar.getTime());
     }
 
-    public static void displayNetworkFailDialog(final Activity context, String type){
+    public static void displayNetworkFailDialog(final Activity context, String type) {
         AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(context);
 
-        if (type.equalsIgnoreCase(NETWORK_FAIL)){
+        if (type.equalsIgnoreCase(NETWORK_FAIL)) {
             alertDialogBuilder.setMessage(context.getResources().getString(R.string.network_fail_message));
             alertDialogBuilder.setTitle(context.getResources().getString(R.string.network_status));
-        } else if (type.equalsIgnoreCase(ERROR)){
+        } else if (type.equalsIgnoreCase(ERROR)) {
             alertDialogBuilder.setMessage(context.getResources().getString(R.string.error_message));
             alertDialogBuilder.setTitle(context.getResources().getString(R.string.error_status));
         }
@@ -68,5 +68,17 @@ public class Utility implements Constants{
         alertDialog = alertDialogBuilder.create();
         alertDialog.setCanceledOnTouchOutside(false);
         alertDialog.show();
+    }
+
+    public static double calculateLatLangDistances(double lat1, double long1, double lat2, double long2) {
+        Location locationA = new Location("point A");
+        locationA.setLatitude(lat1);
+        locationA.setLongitude(long1);
+
+        Location locationB = new Location("point B");
+        locationB.setLatitude(lat2);
+        locationB.setLongitude(long2);
+
+        return locationA.distanceTo(locationB);
     }
 }

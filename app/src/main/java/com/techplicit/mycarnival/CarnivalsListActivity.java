@@ -65,11 +65,6 @@ public class CarnivalsListActivity extends ActionBarActivity
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         super.onCreate(savedInstanceState);
 
-//        requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
-//        setSupportProgressBarIndeterminateVisibility(false);
-
-
-
         setContentView(R.layout.activity_carnivals_list);
 
         mNavigationDrawerFragment = (NavigationDrawerFragment)
@@ -87,6 +82,14 @@ public class CarnivalsListActivity extends ActionBarActivity
         getSupportActionBar().setDisplayHomeAsUpEnabled(false);
         getSupportActionBar().setHomeButtonEnabled(false);
         getSupportActionBar().setTitle("");
+
+        ImageView home_icon = (ImageView)findViewById(R.id.home_icon);
+        home_icon.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                IntentGenerator.startHomeActivity(CarnivalsListActivity.this);
+            }
+        });
 
         // Set up the drawer.
 //        mNavigationDrawerFragment.setUp(
@@ -110,20 +113,25 @@ public class CarnivalsListActivity extends ActionBarActivity
         mDrawerToggle.syncState();
         mDrawerToggle.setDrawerIndicatorEnabled(false);
 
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        fragmentManager.beginTransaction()
+                .replace(R.id.container, PlaceholderFragment.newInstance(0))
+                .commit();
 
     }
 
     @Override
     public void onNavigationDrawerItemSelected(int position) {
         // update the main content by replacing fragments
-        FragmentManager fragmentManager = getSupportFragmentManager();
+        /*FragmentManager fragmentManager = getSupportFragmentManager();
         fragmentManager.beginTransaction()
                 .replace(R.id.container, PlaceholderFragment.newInstance(position + 1))
-                .commit();
-    }
+                .commit();*/
 
-    public void onSectionAttached(int number) {
-        switch (number) {
+        switch (position) {
+            case 0:
+                closeDrawer();
+                break;
             case 1:
                 closeDrawer();
                 break;
@@ -133,14 +141,30 @@ public class CarnivalsListActivity extends ActionBarActivity
             case 3:
                 closeDrawer();
                 break;
+
+        }
+
+    }
+
+    public void onSectionAttached(int number) {
+        switch (number) {
+            case 1:
+//                closeDrawer();
+                break;
+            case 2:
+//                closeDrawer();
+                break;
+            case 3:
+//                closeDrawer();
+                break;
             case 4:
-                closeDrawer();
+//                closeDrawer();
                 break;
         }
     }
 
     private void closeDrawer(){
-        if (drawerLayout.isDrawerOpen(Gravity.RIGHT)) {
+        if (drawerLayout!=null && drawerLayout.isDrawerOpen(Gravity.RIGHT)) {
             drawerLayout.closeDrawer(Gravity.RIGHT);
         }
     }
@@ -217,6 +241,9 @@ public class CarnivalsListActivity extends ActionBarActivity
         @Override
         public View onCreateView(LayoutInflater inflater, ViewGroup container,
                                  final Bundle savedInstanceState) {
+
+            Log.e("Siva", "onCreateView called");
+
             View rootView = inflater.inflate(R.layout.fragment_carnivals_list, container, false);
             carnivalsList = (ListView)rootView.findViewById(R.id.list_carnivals);
             ProgressBar carnivalsProgress = (ProgressBar)rootView.findViewById(R.id.progress_carnivals_list);

@@ -1,13 +1,19 @@
 package com.techplicit.mycarnival.ui.activities.fragments;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.AlertDialog;
 import android.util.Log;
@@ -47,11 +53,12 @@ public class BandsAlphaSortFragment extends Fragment implements Constants{
          * fragment.
          */
         private static final String ARG_SECTION_NUMBER = "section_number";
-        private static ListView carnivalsList;
+    private static final int MY_PERMISSIONS_LOCATION = 1;
+    private static ListView carnivalsList;
         private ProgressDialog pDialog;
         private AlertDialog alertDialog;
 
-        /**
+    /**
          * Returns a new instance of this fragment for the given section
          * number.
          */
@@ -66,7 +73,8 @@ public class BandsAlphaSortFragment extends Fragment implements Constants{
         public BandsAlphaSortFragment() {
         }
 
-        @Override
+
+    @Override
         public View onCreateView(LayoutInflater inflater, ViewGroup container,
                                  Bundle savedInstanceState) {
             View rootView = inflater.inflate(R.layout.fragment_bands_list, container, false);
@@ -80,10 +88,27 @@ public class BandsAlphaSortFragment extends Fragment implements Constants{
                 public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                     ArrayList<BandsPojo> carnivalsPojoArrayList = CarnivalsSingleton.getInstance().getBandsPojoArrayList();
                     BandsPojo carnivalsPojo = (BandsPojo)carnivalsPojoArrayList.get(position);
+
+                    String bandName = carnivalsPojo.getName();
+                    String address = carnivalsPojo.getAddress();
+                    String latitude = carnivalsPojo.getLatitude();
+                    String longitude = carnivalsPojo.getLongitude();
+
+                    if (bandName!=null && address!=null && latitude!=null && longitude!=null){
+                        SharedPreferences sharedPreferences = getActivity().getSharedPreferences(PREFS_CARNIVAL, Context.MODE_PRIVATE);
+                        SharedPreferences.Editor editor = sharedPreferences.edit();
+                        editor.putString(SELECTED_BAND_NAME, bandName);
+                        editor.putString(SELECTED_BAND_ADDRESS, address);
+                        editor.putString(SELECTED_BAND_LATITUDE, latitude);
+                        editor.putString(SELECTED_BAND_LONGITUDE, longitude);
+
+                        editor.putString(UPDATE_LOCATION_FROM, FROM_BANDS_LIST);
+
+                        editor.commit();
+                    }
+
                     if (carnivalsPojo.getActiveFlag()){
                         IntentGenerator.startUpdateBandLocation(getActivity().getApplicationContext(), position, carnivalsPojo.getName());
-                    }else{
-                        Toast.makeText(getActivity().getApplicationContext(), "False", Toast.LENGTH_SHORT).show();
                     }
                 }
             });
@@ -108,7 +133,8 @@ public class BandsAlphaSortFragment extends Fragment implements Constants{
         }
 
 
-        static class GetAsync extends AsyncTask<String, String, JSONArray> {
+
+    static class GetAsync extends AsyncTask<String, String, JSONArray> {
 
             private boolean isResponseSucceed;
             ServiceHandler jsonParser = new ServiceHandler();
@@ -125,6 +151,7 @@ public class BandsAlphaSortFragment extends Fragment implements Constants{
             private Activity mContext;
             private String responseStatus;
             private String jsonData;
+            private String selectedCarnivalNameTrimmed;
 
             public GetAsync(Activity context, ProgressBar carnivalsProgress) {
                 mContext = context;
@@ -150,13 +177,12 @@ public class BandsAlphaSortFragment extends Fragment implements Constants{
                     SharedPreferences sharedPreferences = mContext.getSharedPreferences(PREFS_CARNIVAL, Context.MODE_PRIVATE);
                     String selectedCarnivalName = sharedPreferences.getString(SELECTED_CARNIVAL_NAME, "");
 
-                    String selectedCarnivalNameTrimmed = null;
 
-                    if (selectedCarnivalName.contains(" & ")){
-                        selectedCarnivalNameTrimmed = selectedCarnivalName.replace(" & ", "+%26+").trim();
-                    }else if (selectedCarnivalName.contains(" ")){
+                    if (selectedCarnivalName.contains(" & ") || selectedCarnivalName.contains(" ")){
+                        selectedCarnivalNameTrimmed = selectedCarnivalName.replace(" & ", "+%26+").replace(" ", "%20").trim();
+                    }/*else if (selectedCarnivalName.contains(" ")){
                         selectedCarnivalNameTrimmed = selectedCarnivalName.replace(" ", "%20").trim();
-                    }
+                    }*/
 
                     responseStatus = jsonParser.makeHttpRequest(
                             BANDS_URL+selectedCarnivalNameTrimmed, "GET", null);
@@ -234,8 +260,6 @@ public class BandsAlphaSortFragment extends Fragment implements Constants{
             }
 
         }
-
-
 
 
 

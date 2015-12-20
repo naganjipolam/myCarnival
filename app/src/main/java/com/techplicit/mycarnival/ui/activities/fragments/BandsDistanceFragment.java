@@ -1,13 +1,16 @@
 package com.techplicit.mycarnival.ui.activities.fragments;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Context;
-import android.content.DialogInterface;
-import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.location.Location;
+import android.location.LocationManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.AlertDialog;
 import android.util.Log;
@@ -17,7 +20,6 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.ProgressBar;
-import android.widget.Toast;
 
 import com.techplicit.mycarnival.IntentGenerator;
 import com.techplicit.mycarnival.R;
@@ -25,29 +27,30 @@ import com.techplicit.mycarnival.adapters.BandsGridAdapter;
 import com.techplicit.mycarnival.data.CarnivalsSingleton;
 import com.techplicit.mycarnival.data.ServiceHandler;
 import com.techplicit.mycarnival.data.model.BandsPojo;
-import com.techplicit.mycarnival.ui.activities.UpdateBandLocationActivity;
 import com.techplicit.mycarnival.utils.Constants;
 import com.techplicit.mycarnival.utils.Utility;
 
 import org.json.JSONArray;
-import org.json.JSONObject;
 
 import java.util.ArrayList;
 
 /**
  * Created by pnaganjane001 on 18/12/15.
  */
-public class BandsDistanceFragment extends Fragment implements Constants{
+public class BandsDistanceFragment extends Fragment implements Constants, android.location.LocationListener {
 
     /**
      * The fragment argument representing the section number for this
      * fragment.
      */
     private static final String ARG_SECTION_NUMBER = "section_number";
+    private static final int MY_PERMISSIONS_LOCATION = 1;
     private static ListView carnivalsList;
     private ProgressDialog pDialog;
     private AlertDialog alertDialog;
-
+    private double latitude;
+    private double longitude;
+    private LocationManager locationManager;
     /**
      * Returns a new instance of this fragment for the given section
      * number.
@@ -64,6 +67,31 @@ public class BandsDistanceFragment extends Fragment implements Constants{
     }
 
     @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
+
+        locationManager = (LocationManager) getActivity().getSystemService(Context.LOCATION_SERVICE);
+        if (ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+
+            ActivityCompat.requestPermissions(getActivity(),
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION},
+                    MY_PERMISSIONS_LOCATION);
+
+            return;
+        }
+
+        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, this);
+
+    }
+
+    @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.fragment_bands_list, container, false);
@@ -77,6 +105,23 @@ public class BandsDistanceFragment extends Fragment implements Constants{
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 ArrayList<BandsPojo> carnivalsPojoArrayList = CarnivalsSingleton.getInstance().getBandsPojoArrayList();
                 BandsPojo carnivalsPojo = (BandsPojo)carnivalsPojoArrayList.get(position);
+
+                String bandName = carnivalsPojo.getName();
+                String address = carnivalsPojo.getAddress();
+                String latitude = carnivalsPojo.getLatitude();
+                String longitude = carnivalsPojo.getLongitude();
+
+                if (bandName!=null && address!=null && latitude!=null && longitude!=null){
+                    SharedPreferences sharedPreferences = getActivity().getSharedPreferences(PREFS_CARNIVAL, Context.MODE_PRIVATE);
+                    SharedPreferences.Editor editor = sharedPreferences.edit();
+                    editor.putString(SELECTED_BAND_NAME, bandName);
+                    editor.putString(SELECTED_BAND_ADDRESS, address);
+                    editor.putString(SELECTED_BAND_LATITUDE, latitude);
+                    editor.putString(SELECTED_BAND_LONGITUDE, longitude);
+                    editor.putString(UPDATE_LOCATION_FROM, FROM_BANDS_LIST);
+                    editor.commit();
+                }
+
                 if (carnivalsPojo.getActiveFlag()){
                     IntentGenerator.startUpdateBandLocation(getActivity().getApplicationContext(), position, carnivalsPojo.getName());
                 }else{
@@ -103,6 +148,28 @@ public class BandsDistanceFragment extends Fragment implements Constants{
         super.onAttach(activity);
 //            ((CarnivalsListActivity) activity).onSectionAttached(
 //                    getArguments().getInt(ARG_SECTION_NUMBER));
+    }
+
+    @Override
+    public void onLocationChanged(Location location) {
+
+        latitude = location.getLatitude();
+        longitude = location.getLongitude();
+    }
+
+    @Override
+    public void onStatusChanged(String provider, int status, Bundle extras) {
+
+    }
+
+    @Override
+    public void onProviderEnabled(String provider) {
+
+    }
+
+    @Override
+    public void onProviderDisabled(String provider) {
+
     }
 
 
@@ -196,13 +263,32 @@ public class BandsDistanceFragment extends Fragment implements Constants{
                 }
             }
 
-
         }
 
     }
 
 
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           String permissions[], int[] grantResults) {
+        switch (requestCode) {
+            case MY_PERMISSIONS_LOCATION: {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
 
+                } else {
+
+                    // permission denied, boo! Disable the
+                    // functionality that depends on this permission.
+                }
+                return;
+            }
+
+            // other 'case' lines to check for other
+            // permissions this app might request
+        }
+    }
 
 
 

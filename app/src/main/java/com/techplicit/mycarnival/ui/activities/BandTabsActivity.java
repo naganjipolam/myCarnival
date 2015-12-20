@@ -1,8 +1,16 @@
 package com.techplicit.mycarnival.ui.activities;
 
+import android.Manifest;
+import android.content.Context;
+import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.os.Bundle;
 import android.support.design.widget.TabLayout;
 import android.support.v4.app.ActionBarDrawerToggle;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
@@ -28,14 +36,16 @@ import com.techplicit.mycarnival.ui.activities.fragments.BandsAlphaSortFragment;
 import com.techplicit.mycarnival.ui.activities.fragments.BandsDistanceFragment;
 import com.techplicit.mycarnival.ui.activities.fragments.BandsMyFavourites;
 import com.techplicit.mycarnival.ui.activities.fragments.BandsViewFragment;
+import com.techplicit.mycarnival.utils.Constants;
 
 /**
  * Created by pnaganjane001 on 18/12/15.
  */
 public class BandTabsActivity extends AppCompatActivity
-        implements NavigationDrawerFragment.NavigationDrawerCallbacks, android.app.ActionBar.TabListener {
+        implements NavigationDrawerFragment.NavigationDrawerCallbacks, android.app.ActionBar.TabListener, Constants, LocationListener {
 
 
+    private static final int MY_PERMISSIONS_LOCATION = 1;
     /**
      * Fragment managing the behaviors, interactions and presentation of the navigation drawer.
      */
@@ -49,7 +59,7 @@ public class BandTabsActivity extends AppCompatActivity
     private BandsTabsPageAdapter mAdapter;
 
     // Tab titles
-    private String[] tabs = { "Top Rated", "Games", "Movies" };
+    private String[] tabs = {"Top Rated", "Games", "Movies"};
     private int[] tabIcons = {
             R.drawable.ic_drawer,
             R.drawable.alpha_sort,
@@ -57,9 +67,14 @@ public class BandTabsActivity extends AppCompatActivity
             R.drawable.ic_drawer
     };
     private TabLayout tabLayout;
-    private Button btnFetes, btnBands,btnBandLocation, btnBandUpdate, btnSmartUpdate;
+    private Button btnFetes, btnBands, btnBandLocation, btnBandUpdate, btnSmartUpdate;
     private int bandPosition;
     private String bandName;
+
+    public LocationManager locationManager;
+    public LocationListener locationListener;
+
+    protected double latitude,longitude;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,11 +85,38 @@ public class BandTabsActivity extends AppCompatActivity
                 getSupportFragmentManager().findFragmentById(R.id.navigation_drawer);
         mTitle = getTitle();
 
+        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+
+            ActivityCompat.requestPermissions(BandTabsActivity.this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION},
+                    MY_PERMISSIONS_LOCATION);
+
+            return;
+        }
+
+        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, this);
+
+
         btnFetes = (Button)findViewById(R.id.fetes_button_hs);
         btnBands = (Button)findViewById(R.id.band_button_hs);
         btnBandLocation = (Button)findViewById(R.id.band_location_button_hs);
         btnBandUpdate = (Button)findViewById(R.id.band_update_button_hs);
         btnSmartUpdate = (Button)findViewById(R.id.smart_update_button_hs);
+        ImageView home_icon = (ImageView)findViewById(R.id.home_icon);
+        home_icon.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                IntentGenerator.startHomeActivity(BandTabsActivity.this);
+            }
+        });
 
         Toolbar toolbar = (Toolbar)findViewById(R.id.app_bar);
         setSupportActionBar(toolbar);
@@ -139,6 +181,11 @@ public class BandTabsActivity extends AppCompatActivity
         btnBandUpdate.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                SharedPreferences sharedPreferences = getSharedPreferences(PREFS_CARNIVAL, Context.MODE_PRIVATE);
+                SharedPreferences.Editor editor = sharedPreferences.edit();
+                editor.putString(UPDATE_LOCATION_FROM, FROM_BAND_UPDATE_BUTTON);
+                editor.commit();
+
                 IntentGenerator.startUpdateBandLocation(getApplicationContext(), -1, null);
             }
         });
@@ -149,6 +196,7 @@ public class BandTabsActivity extends AppCompatActivity
 //                IntentGenerator.startUpdateBandLocation(getApplicationContext(), -1, null);
             }
         });
+
 
     }
 
@@ -174,6 +222,23 @@ public class BandTabsActivity extends AppCompatActivity
 //        fragmentManager.beginTransaction()
 //                .replace(R.id.container, BandsAlphaSortFragment.newInstance(position + 1))
 //                .commit();
+
+        switch (position) {
+            case 0:
+                closeDrawer();
+                break;
+            case 1:
+                closeDrawer();
+                break;
+            case 2:
+                closeDrawer();
+                break;
+            case 3:
+                closeDrawer();
+                break;
+
+        }
+
     }
 
     public void onSectionAttached(int number) {
@@ -197,7 +262,7 @@ public class BandTabsActivity extends AppCompatActivity
     }
 
     private void closeDrawer(){
-        if (drawerLayout.isDrawerOpen(Gravity.RIGHT)) {
+        if (drawerLayout!=null && drawerLayout.isDrawerOpen(Gravity.RIGHT)) {
             drawerLayout.closeDrawer(Gravity.RIGHT);
         }
     }
@@ -247,6 +312,51 @@ public class BandTabsActivity extends AppCompatActivity
     @Override
     public void onTabReselected(android.app.ActionBar.Tab tab, android.app.FragmentTransaction ft) {
 
+    }
+
+    @Override
+    public void onLocationChanged(Location location) {
+
+        latitude = location.getLatitude();
+        longitude = location.getLongitude();
+
+    }
+
+    @Override
+    public void onStatusChanged(String provider, int status, Bundle extras) {
+
+    }
+
+    @Override
+    public void onProviderEnabled(String provider) {
+
+    }
+
+    @Override
+    public void onProviderDisabled(String provider) {
+
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           String permissions[], int[] grantResults) {
+        switch (requestCode) {
+            case MY_PERMISSIONS_LOCATION: {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+
+                } else {
+
+                    // permission denied, boo! Disable the
+                    // functionality that depends on this permission.
+                }
+                return;
+            }
+
+            // other 'case' lines to check for other
+            // permissions this app might request
+        }
     }
 
 }

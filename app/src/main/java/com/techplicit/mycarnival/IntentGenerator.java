@@ -3,6 +3,7 @@ package com.techplicit.mycarnival;
 import android.content.Context;
 import android.content.Intent;
 
+import com.techplicit.mycarnival.ui.activities.BandTabsActivity;
 import com.techplicit.mycarnival.ui.activities.UpdateBandLocationActivity;
 import com.techplicit.mycarnival.utils.Constants;
 
@@ -19,4 +20,17 @@ public class IntentGenerator implements Constants{
         i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         context.startActivity(i);
     }
+
+    public static void startBandsListActivity(Context context){
+        Intent bandIntent = new Intent(context, BandTabsActivity.class);
+        bandIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        context.startActivity(bandIntent);
+    }
+
+    public static void startHomeActivity(Context context){
+        Intent bandIntent = new Intent(context, MainActivity.class);
+        bandIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        context.startActivity(bandIntent);
+    }
+
 }

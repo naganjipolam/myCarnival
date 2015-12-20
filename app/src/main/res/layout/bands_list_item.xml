@@ -14,16 +14,14 @@
 
     <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="@dimen/band_image_width_height"
         android:background="@color/black"
-        android:layout_toRightOf="@id/image_band"
-        android:layout_alignBottom="@id/image_band"
-        android:layout_alignTop="@id/image_band">
+        android:layout_toRightOf="@id/image_band">
 
         <RelativeLayout
             android:id="@+id/layout"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
             >
 
             <TextView
@@ -64,10 +62,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_alignParentBottom="true"
-            android:layout_marginBottom="@dimen/band_list_item_bottom_layout_margin_bottom"
-            android:layout_marginLeft="@dimen/band_list_item_bottom_layout_margin_left"
+            android:padding="@dimen/band_list_item_bottom_layout_margin_left"
             android:orientation="horizontal"
-            >
+            android:gravity="bottom">
 
             <TextView
                 android:id="@+id/time_band"

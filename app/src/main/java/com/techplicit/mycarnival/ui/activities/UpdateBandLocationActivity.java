@@ -5,6 +5,7 @@ import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -23,18 +24,26 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.NumberPicker;
 import android.widget.ProgressBar;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
+import com.google.android.gms.maps.MapsInitializer;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
+import com.google.android.gms.maps.model.MarkerOptions;
+import com.techplicit.mycarnival.IntentGenerator;
 import com.techplicit.mycarnival.NavigationDrawerFragment;
 import com.techplicit.mycarnival.R;
-import com.techplicit.mycarnival.adapters.CarnivalsListAdapter;
 import com.techplicit.mycarnival.data.CarnivalsSingleton;
 import com.techplicit.mycarnival.data.ServiceHandler;
 import com.techplicit.mycarnival.data.model.BandsPojo;
@@ -42,7 +51,6 @@ import com.techplicit.mycarnival.data.model.CarnivalsPojo;
 import com.techplicit.mycarnival.utils.Constants;
 import com.techplicit.mycarnival.utils.Utility;
 
-import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
@@ -54,9 +62,10 @@ public class UpdateBandLocationActivity extends ActionBarActivity
     private static final int MIN_VALUE = 1;
     private static NumberPicker bandsPicker;
     private static String mDurationStr;
-    private static int mDurationValue;
+    private static int mDurationValue = 1;
     private static String selectedPickerValue;
     private static TextView selectBandText;
+    private static TextView updateLocation;
     /**
      * Fragment managing the behaviors, interactions and presentation of the navigation drawer.
      */
@@ -68,7 +77,11 @@ public class UpdateBandLocationActivity extends ActionBarActivity
     private CharSequence mTitle;
     private DrawerLayout drawerLayout;
     private ActionBarDrawerToggle mDrawerToggle;
-    private static String bandNameSelected;
+    private static String bandNameSelected, bandAddress, bandLatitude, bandLongitude, carnivalName, from;
+    private TextView title;
+
+    private static GoogleMap mMap;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -76,7 +89,7 @@ public class UpdateBandLocationActivity extends ActionBarActivity
 
         Intent i = getIntent();
 
-        if (i!=null){
+        if (i != null) {
             bandNameSelected = i.getStringExtra(BAND_NAME);
         }
 
@@ -89,26 +102,37 @@ public class UpdateBandLocationActivity extends ActionBarActivity
 //                R.id.navigation_drawer,
 //                (DrawerLayout) findViewById(R.id.drawer_layout));
 
-        Toolbar toolbar = (Toolbar)findViewById(R.id.app_bar);
+        Toolbar toolbar = (Toolbar) findViewById(R.id.app_bar);
         setSupportActionBar(toolbar);
         toolbar.setNavigationIcon(R.drawable.ic_drawer);
         getSupportActionBar().setDisplayHomeAsUpEnabled(false);
         getSupportActionBar().setHomeButtonEnabled(false);
         getSupportActionBar().setTitle("");
 
+        ImageView home_icon = (ImageView)findViewById(R.id.home_icon);
+        home_icon.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                IntentGenerator.startHomeActivity(UpdateBandLocationActivity.this);
+            }
+        });
+
+        title = (TextView) findViewById(R.id.title);
+        title.setText(getResources().getString(R.string.update_location_title));
         // Set up the drawer.
 //        mNavigationDrawerFragment.setUp(
 //                R.id.navigation_drawer,
 //                (DrawerLayout) findViewById(R.id.drawer_layout));
 
-        drawerLayout = (DrawerLayout)findViewById(R.id.drawer_layout);
+        drawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
 
-        mDrawerToggle = new ActionBarDrawerToggle(this,drawerLayout,toolbar,R.string.navigation_drawer_open,R.string.navigation_drawer_close){
+        mDrawerToggle = new ActionBarDrawerToggle(this, drawerLayout, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close) {
 
             @Override
             public void onDrawerOpened(View drawerView) {
                 super.onDrawerOpened(drawerView);
             }
+
             @Override
             public void onDrawerClosed(View drawerView) {
                 super.onDrawerClosed(drawerView);
@@ -118,16 +142,50 @@ public class UpdateBandLocationActivity extends ActionBarActivity
         mDrawerToggle.syncState();
         mDrawerToggle.setDrawerIndicatorEnabled(false);
 
+        SharedPreferences sharedPreferences = getSharedPreferences(PREFS_CARNIVAL, Context.MODE_PRIVATE);
+        bandNameSelected = sharedPreferences.getString(SELECTED_BAND_NAME, null);
+        bandAddress = sharedPreferences.getString(SELECTED_BAND_ADDRESS, null);
+        bandLatitude = sharedPreferences.getString(SELECTED_BAND_LATITUDE, null);
+        bandLongitude = sharedPreferences.getString(SELECTED_BAND_LONGITUDE, null);
+        carnivalName = sharedPreferences.getString(SELECTED_CARNIVAL_NAME, null);
+        from = sharedPreferences.getString(UPDATE_LOCATION_FROM, null);
+
+        Log.e("Siva", "bandNameSelected--> "+bandNameSelected);
+
+//        plotMarkers(bandLatitude, bandLongitude, bandNameSelected, UpdateBandLocationActivity.this);
+
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        fragmentManager.beginTransaction()
+                .replace(R.id.container, PlaceholderFragment.newInstance(0))
+                .commit();
+
 
     }
 
     @Override
     public void onNavigationDrawerItemSelected(int position) {
         // update the main content by replacing fragments
-        FragmentManager fragmentManager = getSupportFragmentManager();
+        /*FragmentManager fragmentManager = getSupportFragmentManager();
         fragmentManager.beginTransaction()
                 .replace(R.id.container, PlaceholderFragment.newInstance(position + 1))
                 .commit();
+*/
+        switch (position) {
+            case 0:
+                closeDrawer();
+                break;
+            case 1:
+                closeDrawer();
+                break;
+            case 2:
+                closeDrawer();
+                break;
+            case 3:
+                closeDrawer();
+                break;
+
+        }
+
     }
 
     public void onSectionAttached(int number) {
@@ -150,8 +208,8 @@ public class UpdateBandLocationActivity extends ActionBarActivity
         }
     }
 
-    private void closeDrawer(){
-        if (drawerLayout.isDrawerOpen(Gravity.RIGHT)) {
+    private void closeDrawer() {
+        if (drawerLayout!=null && drawerLayout.isDrawerOpen(Gravity.RIGHT)) {
             drawerLayout.closeDrawer(Gravity.RIGHT);
         }
     }
@@ -208,7 +266,8 @@ public class UpdateBandLocationActivity extends ActionBarActivity
         private static ListView carnivalsList;
         private ProgressDialog pDialog;
         private AlertDialog alertDialog;
-        private GoogleMap mMap;
+
+        private Button btnFetes, btnBands, btnBandLocation, btnBandUpdate, btnSmartUpdate;
 
         /**
          * Returns a new instance of this fragment for the given section
@@ -230,18 +289,64 @@ public class UpdateBandLocationActivity extends ActionBarActivity
                                  final Bundle savedInstanceState) {
             View rootView = inflater.inflate(R.layout.update_band_location_fragment, container, false);
 
-            displayUpdateLocationDialog(getActivity());
-
-            if (Utility.isNetworkConnectionAvailable(getActivity())){
-//                carnivalsProgress.setVisibility(View.GONE);
-//                new GetAsync(getActivity().getApplicationContext(), null).execute();
-            }else{
-                Utility.displayNetworkFailDialog(getActivity(), NETWORK_FAIL);
+            if (from!=null && from.equalsIgnoreCase(FROM_BAND_UPDATE_BUTTON)){
+                displayUpdateLocationDialog(getActivity(), FROM_BAND_UPDATE_BUTTON);
+            }else if (from!=null && from.equalsIgnoreCase(FROM_BANDS_LIST)){
+                displayUpdateLocationDialog(getActivity(), FROM_BANDS_LIST);
             }
 
 
+            if (!Utility.isNetworkConnectionAvailable(getActivity())) {
+                Utility.displayNetworkFailDialog(getActivity(), NETWORK_FAIL);
+            }
 
-            ImageView backArrowCarnivalsList = (ImageView)rootView.findViewById(R.id.back_arrow_carnivals_list);
+            btnFetes = (Button) rootView.findViewById(R.id.fetes_button_hs);
+            btnBands = (Button) rootView.findViewById(R.id.band_button_hs);
+            btnBandLocation = (Button) rootView.findViewById(R.id.band_location_button_hs);
+            btnBandUpdate = (Button) rootView.findViewById(R.id.band_update_button_hs);
+            btnSmartUpdate = (Button) rootView.findViewById(R.id.smart_update_button_hs);
+
+            btnFetes.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+
+                }
+            });
+
+            btnBands.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+
+                }
+            });
+
+            btnBandLocation.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    getActivity().finish();
+                }
+            });
+
+            btnBandUpdate.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    SharedPreferences sharedPreferences = getActivity().getSharedPreferences(PREFS_CARNIVAL, Context.MODE_PRIVATE);
+                    SharedPreferences.Editor editor = sharedPreferences.edit();
+                    editor.putString(UPDATE_LOCATION_FROM, FROM_BAND_UPDATE_BUTTON);
+                    editor.commit();
+
+                    displayUpdateLocationDialog(getActivity(), FROM_BAND_UPDATE_BUTTON);
+                }
+            });
+
+            btnSmartUpdate.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+//                IntentGenerator.startUpdateBandLocation(getApplicationContext(), -1, null);
+                }
+            });
+
+            ImageView backArrowCarnivalsList = (ImageView) rootView.findViewById(R.id.back_arrow_carnivals_list);
             backArrowCarnivalsList.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
@@ -249,14 +354,26 @@ public class UpdateBandLocationActivity extends ActionBarActivity
                 }
             });
 
+            MapsInitializer.initialize(getActivity());
+
+            setUpMap();
+
+            Log.e("Siva", "fragment bandNameSelected--> " + bandNameSelected);
+
+
+            if (bandNameSelected!=null){
+                getBandsDetails(bandNameSelected, getActivity());
+            }
+
+
             return rootView;
         }
 
         @Override
         public void onAttach(Activity activity) {
             super.onAttach(activity);
-            ((UpdateBandLocationActivity) activity).onSectionAttached(
-                    getArguments().getInt(ARG_SECTION_NUMBER));
+//            ((UpdateBandLocationActivity) activity).onSectionAttached(
+//                    getArguments().getInt(ARG_SECTION_NUMBER));
         }
 
         private void setUpMap() {
@@ -279,11 +396,14 @@ public class UpdateBandLocationActivity extends ActionBarActivity
                     Toast.makeText(getActivity(), "Unable to create Maps", Toast.LENGTH_SHORT).show();
                 }
             }
+
+
         }
 
 
 
-        static class GetAsync extends AsyncTask<String, String, JSONArray> {
+
+        public static class GetAsync extends AsyncTask<String, String, String> {
 
             private boolean isResponseSucceed;
             ServiceHandler jsonParser = new ServiceHandler();
@@ -291,105 +411,88 @@ public class UpdateBandLocationActivity extends ActionBarActivity
             private ProgressDialog pDialog;
             private ProgressBar carnivalsProgress;
 
-            private static final String CARNIVALS_URL = Constants.BASE_URL+"getcarnivals";
 
             private static final String TAG_SUCCESS = "success";
             private static final String TAG_MESSAGE = "message";
             private ArrayList<CarnivalsPojo> quizModelArrayList;
 
-            private Context mContext;
-            public GetAsync(Context context, ProgressBar carnivalsProgress) {
+            private Activity mContext;
+            private ProgressDialog progressDialog;
+            private String responseStatus;
+            private String response;
+
+            public GetAsync(Activity context, ProgressBar carnivalsProgress) {
                 mContext = context;
                 this.carnivalsProgress = carnivalsProgress;
             }
 
             @Override
             protected void onPreExecute() {
-                this.carnivalsProgress.setVisibility(View.VISIBLE);
+                progressDialog = new ProgressDialog(mContext);
+                progressDialog.setMessage("Please Wait! Updating Band location. ");
+                progressDialog.setCancelable(false);
+                progressDialog.setCanceledOnTouchOutside(false);
+                progressDialog.show();
             }
 
             @Override
-            protected JSONArray doInBackground(String... args) {
+            protected String doInBackground(String... args) {
 
                 try {
 
-//                HashMap<String, String> params = new HashMap<>();
-//                params.put("name", args[0]);
-//                params.put("password", args[1]);
-//
-//                Log.d("request", "starting");
+                    String updateLocationUrl = Constants.BASE_URL + "updatebandlocation?carnival=" + carnivalName +
+                            "&band=" + bandNameSelected + "&address=" + bandAddress.replace(" ", "%20") + "&latitude=" + bandLatitude + "&longitude=" + bandLongitude;
 
-                    String jsonData = jsonParser.makeHttpRequest(
-                            CARNIVALS_URL, "GET", null);
+                    if (updateLocationUrl.contains(" & ") || updateLocationUrl.contains(" ")) {
+                        updateLocationUrl = updateLocationUrl.replace(" & ", "+%26+").replace(" ", "%20").trim();
+                    } /*else if (updateLocationUrl.contains(" ")) {
+                        updateLocationUrl = updateLocationUrl.replace(" ", "%20");
+                    }*/
 
-                    JSONArray jsonArray = null;
+                    Log.e("Siva", "updateLocationUrl--> "+updateLocationUrl);
 
-                    jsonArray = new JSONArray(jsonData);
+                    response = jsonParser.makeHttpRequest(
+                            updateLocationUrl, "GET", null);
 
-
-
-                    if (jsonArray != null) {
-                        Log.d("JSON result", jsonArray.toString());
-
-                        return jsonArray;
+                    if (response != null && !response.equalsIgnoreCase(ERROR)) {
+                        JSONObject jsonObject = new JSONObject(response);
+                        responseStatus = (String) jsonObject.get(STATUS);
                     }
 
                 } catch (Exception e) {
                     e.printStackTrace();
-                    isResponseSucceed = false;
+                    responseStatus = ERROR;
                 }
 
-                return null;
+                return responseStatus;
             }
 
-            protected void onPostExecute(JSONArray jsonArray) {
+            protected void onPostExecute(String response) {
 
-                int success = 0;
-                String message = "";
+                if (progressDialog != null && progressDialog.isShowing()) {
+                    progressDialog.dismiss();
+                }
 
-                JSONObject jsonObject = null;
-                if (jsonArray != null) {
-                /*for (int i=0; i<jsonArray.length();i++ ){
-                    try {
-                        jsonObject = (JSONObject)jsonArray.get(i);
-                    } catch (JSONException e) {
-                        e.printStackTrace();
-                        isResponseSucceed = false;
+                if (response!=null && !response.equalsIgnoreCase(ERROR)) {
+                    if (response != null && response.equalsIgnoreCase("Success")) {
+                        displayUpdateLocationStatus(mContext, "Success");
+                    } else {
+                        displayUpdateLocationStatus(mContext, "Fail");
                     }
-                }*/
 
-                    CarnivalsSingleton.getInstance().setCarnivalsJsonResponse(jsonArray);
+                    SharedPreferences sharedPreferences = mContext.getSharedPreferences(PREFS_CARNIVAL, Context.MODE_PRIVATE);
+                    SharedPreferences.Editor editor = sharedPreferences.edit();
+                    editor.putString(SELECTED_BAND_NAME, null);
+                    editor.putString(SELECTED_BAND_ADDRESS, null);
+                    editor.putString(SELECTED_BAND_LATITUDE, null);
+                    editor.putString(SELECTED_BAND_LONGITUDE, null);
+                    editor.putString(UPDATE_LOCATION_FROM, null);
+                    editor.commit();
 
-                    if (CarnivalsSingleton.getInstance().getCarnivalsJsonResponse()!=null){
-                        quizModelArrayList = CarnivalsSingleton.getInstance().getCarnivalsPojoArrayList();
-
-                        carnivalsList.setAdapter(new CarnivalsListAdapter(mContext,quizModelArrayList));
-                        this.carnivalsProgress.setVisibility(View.GONE);
-                    }
+                } else {
+                    Utility.displayNetworkFailDialog(mContext, ERROR);
                 }
 
-
-//            if (pDialog != null && pDialog.isShowing()) {
-//                pDialog.dismiss();
-//            }
-
-            /*if (json != null) {
-//                Toast.makeText(getApplicationContext(), json.toString(),
-//                        Toast.LENGTH_LONG).show();
-                Log.e("Siva", "JSON---> "+json.toString());
-                try {
-                    success = json.getInt(TAG_SUCCESS);
-                    message = json.getString(TAG_MESSAGE);
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
-            }*/
-
-                if (success == 1) {
-                    Log.d("Success!", message);
-                }else{
-                    Log.d("Failure", message);
-                }
             }
 
         }
@@ -397,29 +500,58 @@ public class UpdateBandLocationActivity extends ActionBarActivity
 
     }
 
-    private static void displayUpdateLocationDialog(final Activity context){
-        Dialog dialog = new Dialog(context);
+    private static void displayUpdateLocationDialog(final Activity context, String fromBandUpdateButton) {
+        final Dialog dialog = new Dialog(context);
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
         dialog.setContentView(R.layout.dialog_update_location);
 //        dialog.setCancelable(false);
 
-        selectBandText = (TextView)dialog.findViewById(R.id.text_select_band);
-        ImageView selectBandImage = (ImageView)dialog.findViewById(R.id.image_select_band);
+        selectBandText = (TextView) dialog.findViewById(R.id.text_select_band);
+        updateLocation = (TextView) dialog.findViewById(R.id.update_location);
+        ImageView selectBandImage = (ImageView) dialog.findViewById(R.id.image_select_band);
 
-        if (bandNameSelected!=null){
+        RelativeLayout layout_select_band = (RelativeLayout)dialog.findViewById(R.id.layout_select_band);
+        if (fromBandUpdateButton!=null && fromBandUpdateButton.equalsIgnoreCase(FROM_BAND_UPDATE_BUTTON)){
+            selectBandText.setText(context.getResources().getString(R.string.select_band));
+        }else if (bandNameSelected != null) {
             selectBandText.setText(bandNameSelected);
         }
-        selectBandText.setOnClickListener(new View.OnClickListener() {
+
+
+        layout_select_band.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 displayDurationDialog(context);
             }
         });
 
-        selectBandImage.setOnClickListener(new View.OnClickListener() {
+        /*selectBandImage.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 displayDurationDialog(context);
+            }
+        });*/
+
+        updateLocation.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                SharedPreferences sharedPreferences = context.getSharedPreferences(PREFS_CARNIVAL, Context.MODE_PRIVATE);
+                String from = sharedPreferences.getString(UPDATE_LOCATION_FROM, null);
+                carnivalName = sharedPreferences.getString(SELECTED_CARNIVAL_NAME, null);
+
+                if (!selectBandText.getText().toString().trim().equalsIgnoreCase(context.getResources().getString(R.string.select_band))){
+                    getBandsDetails(bandNameSelected, context);
+                    if (!Utility.isNetworkConnectionAvailable(context)) {
+                        Utility.displayNetworkFailDialog(context, NETWORK_FAIL);
+                    } else {
+                        new PlaceholderFragment.GetAsync(context, null).execute();
+                    }
+                    dialog.dismiss();
+                }else{
+                    Toast.makeText(context, "Please select Band!", Toast.LENGTH_LONG).show();
+                }
+
             }
         });
 
@@ -427,7 +559,64 @@ public class UpdateBandLocationActivity extends ActionBarActivity
 
     }
 
-    private static void displayDurationDialog(Context context) {
+    private static void displayUpdateLocationStatus(final Activity context, String status) {
+        final Dialog dialog = new Dialog(context);
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        dialog.setContentView(R.layout.update_location_status);
+//        dialog.setCancelable(false);
+
+        TextView status_title = (TextView) dialog.findViewById(R.id.status_title);
+        TextView status_message = (TextView) dialog.findViewById(R.id.status_message);
+        TextView ok_text = (TextView) dialog.findViewById(R.id.ok_text);
+
+        if (status != null && status.equalsIgnoreCase("Success")) {
+            status_title.setText("" + context.getResources().getString(R.string.success_title));
+            status_message.setText("" + context.getResources().getString(R.string.status_message_update_success));
+        } else {
+            status_title.setText("" + context.getResources().getString(R.string.success_title));
+            status_message.setText("" + context.getResources().getString(R.string.status_message_update_fail));
+        }
+
+        ok_text.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                dialog.dismiss();
+            }
+        });
+
+        dialog.show();
+
+    }
+
+    private static void getBandsDetails(String bandName, Activity context) {
+        final ArrayList<BandsPojo> carnivalsPojoArrayList = CarnivalsSingleton.getInstance().getBandsPojoArrayList();
+
+        for (int i = 0; i < carnivalsPojoArrayList.size(); i++) {
+
+                BandsPojo carnivalsPojo = (BandsPojo) carnivalsPojoArrayList.get(i);
+                if (carnivalsPojo.getName().contains(bandName)){
+                    Log.e("Siva", "getBandsDetails ifff");
+                    bandNameSelected = carnivalsPojo.getName();
+                    bandAddress = carnivalsPojo.getAddress();
+                    bandLatitude = carnivalsPojo.getLatitude();
+                    bandLongitude = carnivalsPojo.getLongitude();
+
+                    Log.e("Siva", "bandNameSelected-->"+bandNameSelected);
+                    Log.e("Siva", "bandAddress-->"+bandAddress);
+                    Log.e("Siva", "bandLatitude -->"+bandLatitude);
+                    Log.e("Siva", "bandLongitude -->"+bandLongitude);
+
+                    plotMarkers(bandLatitude, bandLongitude, bandName, context);
+
+                    return;
+                }
+
+        }
+
+
+    }
+
+    private static void displayDurationDialog(final Activity context) {
 
         final Dialog mDurationDialog = new Dialog(context);
         mDurationDialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
@@ -442,8 +631,8 @@ public class UpdateBandLocationActivity extends ActionBarActivity
 
         final ArrayList<BandsPojo> carnivalsPojoArrayList = CarnivalsSingleton.getInstance().getBandsPojoArrayList();
         final ArrayList<String> listBands = new ArrayList<String>();
-        for (int i = 0; i<carnivalsPojoArrayList.size(); i++){
-            BandsPojo carnivalsPojo = (BandsPojo)carnivalsPojoArrayList.get(i);
+        for (int i = 0; i < carnivalsPojoArrayList.size(); i++) {
+            BandsPojo carnivalsPojo = (BandsPojo) carnivalsPojoArrayList.get(i);
             listBands.add(carnivalsPojo.getName());
         }
 
@@ -451,8 +640,14 @@ public class UpdateBandLocationActivity extends ActionBarActivity
             @Override
             public void onClick(View v) {
                 mDurationDialog.dismiss();
-                bandNameSelected = ""+listBands.get(mDurationValue - 1);
 
+                bandNameSelected = "" + listBands.get(mDurationValue - 1);
+                if (bandNameSelected != null) {
+                    selectBandText.setText(bandNameSelected);
+                    getBandsDetails(bandNameSelected, context);
+                }
+
+                mDurationValue = 1;
             }
         });
 
@@ -478,7 +673,7 @@ public class UpdateBandLocationActivity extends ActionBarActivity
                 bandsPicker.getContentDescription();
                 mDurationValue = newVal;
                 bandNameSelected = listBands.get(newVal - 1);
-                if (bandNameSelected!=null){
+                if (bandNameSelected != null) {
                     selectBandText.setText(bandNameSelected);
                 }
 
@@ -490,6 +685,55 @@ public class UpdateBandLocationActivity extends ActionBarActivity
 //        bandsPicker.setValue(mDurationValue);
 
         mDurationDialog.show();
+    }
+
+
+    private static void plotMarkers(String lat, String lng, String name, Activity context)
+    {
+        Log.e("Siva", "lat--> "+lat);
+        Log.e("Siva", "lng--> "+lng);
+        Log.e("Siva", "name--> "+name);
+
+        // Create user marker with custom icon and other options
+        MarkerOptions markerOption = new MarkerOptions().position(new LatLng(Double.parseDouble(lat), Double.parseDouble(lng)));
+        markerOption.icon(BitmapDescriptorFactory.fromResource(R.drawable.app_icon));
+
+        Marker currentMarker = mMap.addMarker(markerOption);
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(Double.parseDouble(lat), Double.parseDouble(lng)), 15));
+        mMap.setInfoWindowAdapter(new MarkerInfoWindowAdapter(name, context));
+
+    }
+
+    public static class MarkerInfoWindowAdapter implements GoogleMap.InfoWindowAdapter
+    {
+        private String mName;
+        private Activity mContext;
+        public MarkerInfoWindowAdapter(String name, Activity context)
+        {
+            mName = name;
+            mContext = context;
+        }
+
+        @Override
+        public View getInfoWindow(Marker marker)
+        {
+            return null;
+        }
+
+        @Override
+        public View getInfoContents(Marker marker) {
+            View v  = mContext.getLayoutInflater().inflate(R.layout.custom_marker_icon, null);
+
+            ImageView markerIcon = (ImageView) v.findViewById(R.id.marker_icon);
+
+            TextView markerLabel = (TextView)v.findViewById(R.id.marker_text);
+
+//                markerIcon.setImageResource(manageMarkerIcon(myMarker.getmIcon()));
+
+            markerLabel.setText(mName);
+
+            return v;
+        }
     }
 
 }

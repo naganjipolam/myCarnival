@@ -2,18 +2,24 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="150dp"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_margin="10dp"
-    android:padding="5dp"
-    >
+    android:padding="5dp">
 
-    <ImageView
+    <com.github.siyamed.shapeimageview.RoundedImageView
         android:id="@+id/image_carnival"
         android:layout_width="match_parent"
         android:layout_height="150dp"
+
         android:scaleType="fitXY"
         android:src="@drawable/cayman_island_small"
-        android:background="@drawable/rounded_image_style"
-        android:padding="2dp"/>
+        android:padding="2dp"
+        app:siRadius="10dp"
+        app:siBorderWidth="1dp"
+        app:siBorderColor="@color/black"
+
+        />
+
     <TextView
         android:id="@+id/title_carnival_list"
         android:layout_width="match_parent"
