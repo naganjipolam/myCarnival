@@ -33,6 +33,7 @@ import com.techplicit.mycarnival.adapters.CarnivalsListAdapter;
 import com.techplicit.mycarnival.data.CarnivalsSingleton;
 import com.techplicit.mycarnival.data.ServiceHandler;
 import com.techplicit.mycarnival.data.model.CarnivalsPojo;
+import com.techplicit.mycarnival.data.model.DateComparator;
 import com.techplicit.mycarnival.ui.activities.BandTabsActivity;
 import com.techplicit.mycarnival.utils.Constants;
 import com.techplicit.mycarnival.utils.Utility;
@@ -41,19 +42,19 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 
 
 public class CarnivalsListActivity extends ActionBarActivity
         implements NavigationDrawerFragment.NavigationDrawerCallbacks, Constants {
 
+    private static final String TAG = CarnivalsListActivity.class.getName();
     /**
      * Fragment managing the behaviors, interactions and presentation of the navigation drawer.
      */
     private NavigationDrawerFragment mNavigationDrawerFragment;
 
-    /**
-     * Used to store the last screen title. For use in {@link #restoreActionBar()}.
-     */
     private CharSequence mTitle;
     private DrawerLayout drawerLayout;
     private ActionBarDrawerToggle mDrawerToggle;
@@ -71,30 +72,16 @@ public class CarnivalsListActivity extends ActionBarActivity
                 getSupportFragmentManager().findFragmentById(R.id.navigation_drawer);
         mTitle = getTitle();
 
-        // Set up the drawer.
-//        mNavigationDrawerFragment.setUp(
-//                R.id.navigation_drawer,
-//                (DrawerLayout) findViewById(R.id.drawer_layout));
-
-        Toolbar toolbar = (Toolbar)findViewById(R.id.app_bar);
-        setSupportActionBar(toolbar);
-        toolbar.setNavigationIcon(R.drawable.ic_drawer);
-        getSupportActionBar().setDisplayHomeAsUpEnabled(false);
-        getSupportActionBar().setHomeButtonEnabled(false);
-        getSupportActionBar().setTitle("");
+        Toolbar toolbar = setupToolBar();
 
         ImageView home_icon = (ImageView)findViewById(R.id.home_icon);
         home_icon.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 IntentGenerator.startHomeActivity(CarnivalsListActivity.this);
+                finish();
             }
         });
-
-        // Set up the drawer.
-//        mNavigationDrawerFragment.setUp(
-//                R.id.navigation_drawer,
-//                (DrawerLayout) findViewById(R.id.drawer_layout));
 
         drawerLayout = (DrawerLayout)findViewById(R.id.drawer_layout);
 
@@ -120,13 +107,18 @@ public class CarnivalsListActivity extends ActionBarActivity
 
     }
 
+    private Toolbar setupToolBar() {
+        Toolbar toolbar = (Toolbar)findViewById(R.id.app_bar);
+        setSupportActionBar(toolbar);
+        toolbar.setNavigationIcon(R.drawable.ic_drawer);
+        getSupportActionBar().setDisplayHomeAsUpEnabled(false);
+        getSupportActionBar().setHomeButtonEnabled(false);
+        getSupportActionBar().setTitle("");
+        return toolbar;
+    }
+
     @Override
     public void onNavigationDrawerItemSelected(int position) {
-        // update the main content by replacing fragments
-        /*FragmentManager fragmentManager = getSupportFragmentManager();
-        fragmentManager.beginTransaction()
-                .replace(R.id.container, PlaceholderFragment.newInstance(position + 1))
-                .commit();*/
 
         switch (position) {
             case 0:
@@ -168,14 +160,6 @@ public class CarnivalsListActivity extends ActionBarActivity
             drawerLayout.closeDrawer(Gravity.RIGHT);
         }
     }
-
-    public void restoreActionBar() {
-        ActionBar actionBar = getSupportActionBar();
-        actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_STANDARD);
-        actionBar.setDisplayShowTitleEnabled(true);
-        actionBar.setTitle(mTitle);
-    }
-
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -385,5 +369,10 @@ public class CarnivalsListActivity extends ActionBarActivity
 
 
 
-
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        CarnivalsSingleton.getInstance().clear();
+        Log.e(TAG, "onDestroy called");
+    }
 }

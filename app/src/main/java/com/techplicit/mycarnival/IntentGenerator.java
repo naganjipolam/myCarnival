@@ -30,6 +30,7 @@ public class IntentGenerator implements Constants{
     public static void startHomeActivity(Context context){
         Intent bandIntent = new Intent(context, MainActivity.class);
         bandIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        bandIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
         context.startActivity(bandIntent);
     }
 

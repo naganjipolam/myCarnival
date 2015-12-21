@@ -3,12 +3,16 @@ package com.techplicit.mycarnival.utils;
 import android.app.Activity;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.location.Location;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.provider.Settings;
 import android.support.v7.app.AlertDialog;
+import android.util.Log;
 
 import com.techplicit.mycarnival.R;
+import com.techplicit.mycarnival.ui.activities.UpdateBandLocationActivity;
 
 import java.text.DateFormatSymbols;
 import java.text.SimpleDateFormat;
@@ -19,7 +23,10 @@ import java.util.Calendar;
  */
 public class Utility implements Constants {
 
+    private static final String TAG = Utility.class.getName();
     private static AlertDialog alertDialog;
+    private static AlertDialog.Builder alertDialogSettings;
+    public static AlertDialog changePassDialog;
 
     // added as an instance method to an Activity
     public static boolean isNetworkConnectionAvailable(Context context) {
@@ -81,4 +88,51 @@ public class Utility implements Constants {
 
         return locationA.distanceTo(locationB);
     }
+
+    /**
+     * Function to show settings alert dialog
+     * On pressing Settings button will lauch Settings Options
+     */
+    public static AlertDialog showSettingsAlert(final Activity activity) {
+        alertDialogSettings = new AlertDialog.Builder(activity);
+        // Setting Dialog Title
+        alertDialogSettings.setTitle("GPS is settings");
+        // Setting Dialog Message
+        alertDialogSettings.setMessage("GPS is not enabled. Do you want to go to settings menu?");
+        // On pressing Settings button
+        alertDialogSettings.setPositiveButton("Settings", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int which) {
+                Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+                activity.startActivity(intent);
+                dialog.cancel();
+            }
+        });
+
+        // on pressing cancel button
+        alertDialogSettings.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.cancel();
+            }
+        });
+        // Showing Alert Message
+
+        changePassDialog = alertDialogSettings.create();
+
+        try{
+            changePassDialog.dismiss();
+        }catch (Exception e){
+            Log.e(TAG, "Problem with GPS Settings Alert --> " + e.toString());
+        }
+
+        changePassDialog.show();
+
+        /*if (!isGPSDialogShowing){
+            alertDialog.show();
+            isGPSDialogShowing = true;
+        }*/
+
+
+        return changePassDialog;
+    }
+
 }

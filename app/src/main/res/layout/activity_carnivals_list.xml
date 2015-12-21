@@ -45,7 +45,9 @@
                 android:layout_height="wrap_content"
                 android:layout_centerInParent="true"
                 android:text="@string/carnivals_title"
-                android:textColor="@color/white"/>
+                android:textColor="@color/white"
+                android:textAppearance="?android:textAppearanceMedium"
+                android:textStyle="bold"/>
 
         </RelativeLayout>
 

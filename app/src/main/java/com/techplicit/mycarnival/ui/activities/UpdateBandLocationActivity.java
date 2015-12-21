@@ -1,13 +1,24 @@
 package com.techplicit.mycarnival.ui.activities;
 
+import android.Manifest;
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.location.Address;
+import android.location.Geocoder;
+import android.location.Location;
+import android.location.LocationManager;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
+import android.provider.Settings;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.widget.DrawerLayout;
@@ -21,6 +32,7 @@ import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
@@ -28,7 +40,6 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.NumberPicker;
-import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -47,19 +58,23 @@ import com.techplicit.mycarnival.R;
 import com.techplicit.mycarnival.data.CarnivalsSingleton;
 import com.techplicit.mycarnival.data.ServiceHandler;
 import com.techplicit.mycarnival.data.model.BandsPojo;
-import com.techplicit.mycarnival.data.model.CarnivalsPojo;
 import com.techplicit.mycarnival.utils.Constants;
 import com.techplicit.mycarnival.utils.Utility;
 
 import org.json.JSONObject;
 
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
 
 
 public class UpdateBandLocationActivity extends ActionBarActivity
-        implements NavigationDrawerFragment.NavigationDrawerCallbacks, Constants {
+        implements NavigationDrawerFragment.NavigationDrawerCallbacks, Constants, android.location.LocationListener {
 
     private static final int MIN_VALUE = 1;
+    private static final int MY_PERMISSIONS_LOCATION = 101;
+    private static final String TAG = UpdateBandLocationActivity.class.getName();
     private static NumberPicker bandsPicker;
     private static String mDurationStr;
     private static int mDurationValue = 1;
@@ -82,10 +97,39 @@ public class UpdateBandLocationActivity extends ActionBarActivity
 
     private static GoogleMap mMap;
 
+
+    // flag for GPS status
+    boolean isGPSEnabled = false;
+    // flag for network status
+    boolean isNetworkEnabled = false;
+    // flag for GPS status
+    static boolean canGetLocation = false, isGPSDialogShowing = false;
+    Location location; // location
+    public static double latitude; // latitude
+    public static double longitude; // longitude
+    // The minimum distance to change Updates in meters
+    private static final long MIN_DISTANCE_CHANGE_FOR_UPDATES = 10; // 10 meters
+    // The minimum time between updates in milliseconds
+    private static final long MIN_TIME_BW_UPDATES = 1000 * 60 * 1; // 1 minute
+    // Declaring a Location Manager
+    protected LocationManager locationManager;
+    private static ArrayList<BandsPojo> quizModelArrayList;
+    private static SharedPreferences sharedPreferences;
+    private AlertDialog.Builder alertDialog;
+    private AlertDialog changePassDialog;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_carnivals_list);
+
+//        getLocation(this);
+
+        sharedPreferences = getSharedPreferences(PREFS_CARNIVAL, Context.MODE_PRIVATE);
+
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putBoolean(IS_GPS_DIALOG_SHOWING, false);
+        editor.commit();
 
         Intent i = getIntent();
 
@@ -97,11 +141,6 @@ public class UpdateBandLocationActivity extends ActionBarActivity
                 getSupportFragmentManager().findFragmentById(R.id.navigation_drawer);
         mTitle = getTitle();
 
-        // Set up the drawer.
-//        mNavigationDrawerFragment.setUp(
-//                R.id.navigation_drawer,
-//                (DrawerLayout) findViewById(R.id.drawer_layout));
-
         Toolbar toolbar = (Toolbar) findViewById(R.id.app_bar);
         setSupportActionBar(toolbar);
         toolbar.setNavigationIcon(R.drawable.ic_drawer);
@@ -109,20 +148,17 @@ public class UpdateBandLocationActivity extends ActionBarActivity
         getSupportActionBar().setHomeButtonEnabled(false);
         getSupportActionBar().setTitle("");
 
-        ImageView home_icon = (ImageView)findViewById(R.id.home_icon);
+        ImageView home_icon = (ImageView) findViewById(R.id.home_icon);
         home_icon.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 IntentGenerator.startHomeActivity(UpdateBandLocationActivity.this);
+                finish();
             }
         });
 
         title = (TextView) findViewById(R.id.title);
         title.setText(getResources().getString(R.string.update_location_title));
-        // Set up the drawer.
-//        mNavigationDrawerFragment.setUp(
-//                R.id.navigation_drawer,
-//                (DrawerLayout) findViewById(R.id.drawer_layout));
 
         drawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
 
@@ -150,7 +186,7 @@ public class UpdateBandLocationActivity extends ActionBarActivity
         carnivalName = sharedPreferences.getString(SELECTED_CARNIVAL_NAME, null);
         from = sharedPreferences.getString(UPDATE_LOCATION_FROM, null);
 
-        Log.e("Siva", "bandNameSelected--> "+bandNameSelected);
+        Log.e("Siva", "bandNameSelected--> " + bandNameSelected);
 
 //        plotMarkers(bandLatitude, bandLongitude, bandNameSelected, UpdateBandLocationActivity.this);
 
@@ -209,7 +245,7 @@ public class UpdateBandLocationActivity extends ActionBarActivity
     }
 
     private void closeDrawer() {
-        if (drawerLayout!=null && drawerLayout.isDrawerOpen(Gravity.RIGHT)) {
+        if (drawerLayout != null && drawerLayout.isDrawerOpen(Gravity.RIGHT)) {
             drawerLayout.closeDrawer(Gravity.RIGHT);
         }
     }
@@ -268,6 +304,7 @@ public class UpdateBandLocationActivity extends ActionBarActivity
         private AlertDialog alertDialog;
 
         private Button btnFetes, btnBands, btnBandLocation, btnBandUpdate, btnSmartUpdate;
+        private ImageView updateLocationBtn;
 
         /**
          * Returns a new instance of this fragment for the given section
@@ -289,22 +326,96 @@ public class UpdateBandLocationActivity extends ActionBarActivity
                                  final Bundle savedInstanceState) {
             View rootView = inflater.inflate(R.layout.update_band_location_fragment, container, false);
 
-            if (from!=null && from.equalsIgnoreCase(FROM_BAND_UPDATE_BUTTON)){
-                displayUpdateLocationDialog(getActivity(), FROM_BAND_UPDATE_BUTTON);
-            }else if (from!=null && from.equalsIgnoreCase(FROM_BANDS_LIST)){
-                displayUpdateLocationDialog(getActivity(), FROM_BANDS_LIST);
-            }
-
-
             if (!Utility.isNetworkConnectionAvailable(getActivity())) {
                 Utility.displayNetworkFailDialog(getActivity(), NETWORK_FAIL);
             }
+
+            RelativeLayout layout_select_band = (RelativeLayout) rootView.findViewById(R.id.layout_select_band);
+
+            layout_select_band.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    displayDurationDialog(getActivity());
+                }
+            });
 
             btnFetes = (Button) rootView.findViewById(R.id.fetes_button_hs);
             btnBands = (Button) rootView.findViewById(R.id.band_button_hs);
             btnBandLocation = (Button) rootView.findViewById(R.id.band_location_button_hs);
             btnBandUpdate = (Button) rootView.findViewById(R.id.band_update_button_hs);
             btnSmartUpdate = (Button) rootView.findViewById(R.id.smart_update_button_hs);
+            updateLocationBtn = (ImageView) rootView.findViewById(R.id.update_location_btn);
+
+            updateLocationBtn.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    SharedPreferences sharedPreferences = getActivity().getSharedPreferences(PREFS_CARNIVAL, Context.MODE_PRIVATE);
+                    String from = sharedPreferences.getString(UPDATE_LOCATION_FROM, null);
+                    carnivalName = sharedPreferences.getString(SELECTED_CARNIVAL_NAME, null);
+
+                    if (!selectBandText.getText().toString().trim().equalsIgnoreCase(getActivity().getResources().getString(R.string.select_band))) {
+                        getBandsDetails(bandNameSelected, getActivity());
+                        if (!Utility.isNetworkConnectionAvailable(getActivity())) {
+                            Utility.displayNetworkFailDialog(getActivity(), NETWORK_FAIL);
+                        } else {
+                            if (latitude!=0.0 && longitude!=0.0){
+                                Geocoder geocoder = new Geocoder(getActivity(), Locale.getDefault());
+                                List<Address> addresses = null;
+                                try {
+                                    addresses = geocoder.getFromLocation(latitude, longitude, 1);
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                    Log.e(TAG, "Failed to convert Address from Latitude and Longitude");
+                                }
+
+                                StringBuilder builder = new StringBuilder();
+
+                                if (addresses.get(0).getAddressLine(0)!=null){
+                                    builder.append(addresses.get(0).getAddressLine(0)+", ");
+                                }
+
+                                if (addresses.get(0).getLocality()!=null){
+                                    builder.append(addresses.get(0).getLocality()+", ");
+                                }
+
+                                if (addresses.get(0).getAdminArea()!= null){
+                                    builder.append(addresses.get(0).getAdminArea()+", ");
+                                }
+
+                                if (addresses.get(0).getCountryName() !=null){
+                                    builder.append(addresses.get(0).getCountryName()+", ");
+                                }
+
+                                if (addresses.get(0).getPostalCode() !=null){
+                                    builder.append(addresses.get(0).getPostalCode());
+                                }
+
+                                /*if (addresses.get(0).getFeatureName() !=null){
+                                    builder.append(addresses.get(0).getFeatureName());
+                                }*/
+
+                                if (addresses.get(0).getLongitude() !=0){
+                                    bandLongitude = ""+addresses.get(0).getLongitude();
+                                }
+
+                                if (addresses.get(0).getLatitude() !=0){
+                                    bandLatitude = ""+addresses.get(0).getLatitude();
+                                }
+
+                                bandAddress = builder.toString();
+
+                                new PlaceholderFragment.GetAsync(getActivity()).execute();
+
+                            }else{
+                                Toast.makeText(getActivity(), "Problem in fetching current Location!", Toast.LENGTH_LONG).show();
+                            }
+
+                        }
+                    } else {
+                        Toast.makeText(getActivity(), "Please select Band!", Toast.LENGTH_LONG).show();
+                    }
+                }
+            });
 
             btnFetes.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -335,7 +446,7 @@ public class UpdateBandLocationActivity extends ActionBarActivity
                     editor.putString(UPDATE_LOCATION_FROM, FROM_BAND_UPDATE_BUTTON);
                     editor.commit();
 
-                    displayUpdateLocationDialog(getActivity(), FROM_BAND_UPDATE_BUTTON);
+//                    selectBandText.setText(getActivity().getResources().getString(R.string.select_band));
                 }
             });
 
@@ -360,11 +471,18 @@ public class UpdateBandLocationActivity extends ActionBarActivity
 
             Log.e("Siva", "fragment bandNameSelected--> " + bandNameSelected);
 
-
-            if (bandNameSelected!=null){
+            if (bandNameSelected != null) {
                 getBandsDetails(bandNameSelected, getActivity());
             }
 
+            selectBandText = (TextView) rootView.findViewById(R.id.text_select_band);
+            updateLocation = (TextView) rootView.findViewById(R.id.update_location);
+
+            if (from != null && from.equalsIgnoreCase(FROM_BAND_UPDATE_BUTTON)) {
+                selectBandText.setText(getActivity().getResources().getString(R.string.select_band));
+            } else if (from != null && from.equalsIgnoreCase(FROM_BANDS_LIST)) {
+                selectBandText.setText(bandNameSelected);
+            }
 
             return rootView;
         }
@@ -401,29 +519,20 @@ public class UpdateBandLocationActivity extends ActionBarActivity
         }
 
 
-
-
         public static class GetAsync extends AsyncTask<String, String, String> {
 
-            private boolean isResponseSucceed;
             ServiceHandler jsonParser = new ServiceHandler();
-
-            private ProgressDialog pDialog;
-            private ProgressBar carnivalsProgress;
-
 
             private static final String TAG_SUCCESS = "success";
             private static final String TAG_MESSAGE = "message";
-            private ArrayList<CarnivalsPojo> quizModelArrayList;
 
             private Activity mContext;
             private ProgressDialog progressDialog;
             private String responseStatus;
             private String response;
 
-            public GetAsync(Activity context, ProgressBar carnivalsProgress) {
+            public GetAsync(Activity context) {
                 mContext = context;
-                this.carnivalsProgress = carnivalsProgress;
             }
 
             @Override
@@ -445,11 +554,9 @@ public class UpdateBandLocationActivity extends ActionBarActivity
 
                     if (updateLocationUrl.contains(" & ") || updateLocationUrl.contains(" ")) {
                         updateLocationUrl = updateLocationUrl.replace(" & ", "+%26+").replace(" ", "%20").trim();
-                    } /*else if (updateLocationUrl.contains(" ")) {
-                        updateLocationUrl = updateLocationUrl.replace(" ", "%20");
-                    }*/
+                    }
 
-                    Log.e("Siva", "updateLocationUrl--> "+updateLocationUrl);
+                    Log.e("Siva", "updateLocationUrl--> " + updateLocationUrl);
 
                     response = jsonParser.makeHttpRequest(
                             updateLocationUrl, "GET", null);
@@ -473,15 +580,27 @@ public class UpdateBandLocationActivity extends ActionBarActivity
                     progressDialog.dismiss();
                 }
 
-                if (response!=null && !response.equalsIgnoreCase(ERROR)) {
+                SharedPreferences sharedPreferences = mContext.getSharedPreferences(PREFS_CARNIVAL, Context.MODE_PRIVATE);
+                SharedPreferences.Editor editor = sharedPreferences.edit();
+
+                if (response != null && !response.equalsIgnoreCase(ERROR)) {
+
                     if (response != null && response.equalsIgnoreCase("Success")) {
                         displayUpdateLocationStatus(mContext, "Success");
+                        editor.putBoolean(IS_LOCATION_UPDATED, true);
+                        editor.putBoolean(IS_ALPH_SORT_NEEDS_TO_LOAD, true);
+                        editor.putBoolean(IS_DISATNCE_NEEDS_TO_LOAD, true);
+                        editor.putBoolean(IS_FAVS_NEEDS_TO_LOAD, true);
+                        editor.putBoolean(IS_VIEW_NEEDS_TO_LOAD, true);
                     } else {
                         displayUpdateLocationStatus(mContext, "Fail");
+                        editor.putBoolean(IS_LOCATION_UPDATED, false);
+                        editor.putBoolean(IS_ALPH_SORT_NEEDS_TO_LOAD, false);
+                        editor.putBoolean(IS_DISATNCE_NEEDS_TO_LOAD, false);
+                        editor.putBoolean(IS_FAVS_NEEDS_TO_LOAD, false);
+                        editor.putBoolean(IS_VIEW_NEEDS_TO_LOAD, false);
                     }
 
-                    SharedPreferences sharedPreferences = mContext.getSharedPreferences(PREFS_CARNIVAL, Context.MODE_PRIVATE);
-                    SharedPreferences.Editor editor = sharedPreferences.edit();
                     editor.putString(SELECTED_BAND_NAME, null);
                     editor.putString(SELECTED_BAND_ADDRESS, null);
                     editor.putString(SELECTED_BAND_LATITUDE, null);
@@ -510,10 +629,10 @@ public class UpdateBandLocationActivity extends ActionBarActivity
         updateLocation = (TextView) dialog.findViewById(R.id.update_location);
         ImageView selectBandImage = (ImageView) dialog.findViewById(R.id.image_select_band);
 
-        RelativeLayout layout_select_band = (RelativeLayout)dialog.findViewById(R.id.layout_select_band);
-        if (fromBandUpdateButton!=null && fromBandUpdateButton.equalsIgnoreCase(FROM_BAND_UPDATE_BUTTON)){
+        RelativeLayout layout_select_band = (RelativeLayout) dialog.findViewById(R.id.layout_select_band);
+        if (fromBandUpdateButton != null && fromBandUpdateButton.equalsIgnoreCase(FROM_BAND_UPDATE_BUTTON)) {
             selectBandText.setText(context.getResources().getString(R.string.select_band));
-        }else if (bandNameSelected != null) {
+        } else if (bandNameSelected != null) {
             selectBandText.setText(bandNameSelected);
         }
 
@@ -522,36 +641,6 @@ public class UpdateBandLocationActivity extends ActionBarActivity
             @Override
             public void onClick(View v) {
                 displayDurationDialog(context);
-            }
-        });
-
-        /*selectBandImage.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                displayDurationDialog(context);
-            }
-        });*/
-
-        updateLocation.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-
-                SharedPreferences sharedPreferences = context.getSharedPreferences(PREFS_CARNIVAL, Context.MODE_PRIVATE);
-                String from = sharedPreferences.getString(UPDATE_LOCATION_FROM, null);
-                carnivalName = sharedPreferences.getString(SELECTED_CARNIVAL_NAME, null);
-
-                if (!selectBandText.getText().toString().trim().equalsIgnoreCase(context.getResources().getString(R.string.select_band))){
-                    getBandsDetails(bandNameSelected, context);
-                    if (!Utility.isNetworkConnectionAvailable(context)) {
-                        Utility.displayNetworkFailDialog(context, NETWORK_FAIL);
-                    } else {
-                        new PlaceholderFragment.GetAsync(context, null).execute();
-                    }
-                    dialog.dismiss();
-                }else{
-                    Toast.makeText(context, "Please select Band!", Toast.LENGTH_LONG).show();
-                }
-
             }
         });
 
@@ -593,23 +682,23 @@ public class UpdateBandLocationActivity extends ActionBarActivity
 
         for (int i = 0; i < carnivalsPojoArrayList.size(); i++) {
 
-                BandsPojo carnivalsPojo = (BandsPojo) carnivalsPojoArrayList.get(i);
-                if (carnivalsPojo.getName().contains(bandName)){
-                    Log.e("Siva", "getBandsDetails ifff");
-                    bandNameSelected = carnivalsPojo.getName();
-                    bandAddress = carnivalsPojo.getAddress();
-                    bandLatitude = carnivalsPojo.getLatitude();
-                    bandLongitude = carnivalsPojo.getLongitude();
+            BandsPojo carnivalsPojo = (BandsPojo) carnivalsPojoArrayList.get(i);
+            if (carnivalsPojo.getName().contains(bandName)) {
+                Log.e("Siva", "getBandsDetails ifff");
+                bandNameSelected = carnivalsPojo.getName();
+                bandAddress = carnivalsPojo.getAddress();
+                bandLatitude = carnivalsPojo.getLatitude();
+                bandLongitude = carnivalsPojo.getLongitude();
 
-                    Log.e("Siva", "bandNameSelected-->"+bandNameSelected);
-                    Log.e("Siva", "bandAddress-->"+bandAddress);
-                    Log.e("Siva", "bandLatitude -->"+bandLatitude);
-                    Log.e("Siva", "bandLongitude -->"+bandLongitude);
+                Log.e("Siva", "bandNameSelected-->" + bandNameSelected);
+                Log.e("Siva", "bandAddress-->" + bandAddress);
+                Log.e("Siva", "bandLatitude -->" + bandLatitude);
+                Log.e("Siva", "bandLongitude -->" + bandLongitude);
 
-                    plotMarkers(bandLatitude, bandLongitude, bandName, context);
+//                    plotMarkers(bandLatitude, bandLongitude, bandName, context);
 
-                    return;
-                }
+                return;
+            }
 
         }
 
@@ -688,11 +777,10 @@ public class UpdateBandLocationActivity extends ActionBarActivity
     }
 
 
-    private static void plotMarkers(String lat, String lng, String name, Activity context)
-    {
-        Log.e("Siva", "lat--> "+lat);
-        Log.e("Siva", "lng--> "+lng);
-        Log.e("Siva", "name--> "+name);
+    private static void plotMarkers(String lat, String lng, String name, Activity context) {
+        Log.e("Siva", "lat--> " + lat);
+        Log.e("Siva", "lng--> " + lng);
+        Log.e("Siva", "name--> " + name);
 
         // Create user marker with custom icon and other options
         MarkerOptions markerOption = new MarkerOptions().position(new LatLng(Double.parseDouble(lat), Double.parseDouble(lng)));
@@ -701,32 +789,29 @@ public class UpdateBandLocationActivity extends ActionBarActivity
         Marker currentMarker = mMap.addMarker(markerOption);
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(Double.parseDouble(lat), Double.parseDouble(lng)), 15));
         mMap.setInfoWindowAdapter(new MarkerInfoWindowAdapter(name, context));
-
     }
 
-    public static class MarkerInfoWindowAdapter implements GoogleMap.InfoWindowAdapter
-    {
+    public static class MarkerInfoWindowAdapter implements GoogleMap.InfoWindowAdapter {
         private String mName;
         private Activity mContext;
-        public MarkerInfoWindowAdapter(String name, Activity context)
-        {
+
+        public MarkerInfoWindowAdapter(String name, Activity context) {
             mName = name;
             mContext = context;
         }
 
         @Override
-        public View getInfoWindow(Marker marker)
-        {
+        public View getInfoWindow(Marker marker) {
             return null;
         }
 
         @Override
         public View getInfoContents(Marker marker) {
-            View v  = mContext.getLayoutInflater().inflate(R.layout.custom_marker_icon, null);
+            View v = mContext.getLayoutInflater().inflate(R.layout.custom_marker_icon, null);
 
             ImageView markerIcon = (ImageView) v.findViewById(R.id.marker_icon);
 
-            TextView markerLabel = (TextView)v.findViewById(R.id.marker_text);
+            TextView markerLabel = (TextView) v.findViewById(R.id.marker_text);
 
 //                markerIcon.setImageResource(manageMarkerIcon(myMarker.getmIcon()));
 
@@ -735,5 +820,250 @@ public class UpdateBandLocationActivity extends ActionBarActivity
             return v;
         }
     }
+
+
+    @Override
+    public void onLocationChanged(Location location) {
+        if (location != null) {
+            this.latitude = location.getLatitude();
+            this.longitude = location.getLongitude();
+            Log.e(TAG, "latitude-->" + latitude + " longitude--> " + longitude);
+        }
+        Log.e(TAG, "onLocationChanged called-->");
+
+    }
+
+    @Override
+    public void onStatusChanged(String provider, int status, Bundle extras) {
+
+    }
+
+    @Override
+    public void onProviderEnabled(String provider) {
+
+    }
+
+    @Override
+    public void onProviderDisabled(String provider) {
+
+    }
+
+    public Location getLocation(Activity activityContext) {
+        try {
+            Log.e("Siva", "getLocation called");
+            locationManager = (LocationManager) activityContext
+                    .getSystemService(Context.LOCATION_SERVICE);
+
+            // getting GPS status
+            isGPSEnabled = locationManager
+                    .isProviderEnabled(LocationManager.GPS_PROVIDER);
+            // getting network status
+            isNetworkEnabled = locationManager
+                    .isProviderEnabled(LocationManager.NETWORK_PROVIDER);
+            if (!isGPSEnabled && !isNetworkEnabled) {
+                // no network provider is enabled
+                showSettingsAlert();
+                Log.e("Siva", "no network");
+            } else {
+                Log.e("Siva", "network");
+                this.canGetLocation = true;
+                if (isNetworkEnabled) {
+                    Log.e("Siva", "isNetworkEnabled");
+                    if (ActivityCompat.checkSelfPermission(UpdateBandLocationActivity.this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(UpdateBandLocationActivity.this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                        // TODO: Consider calling
+                        //    ActivityCompat#requestPermissions
+                        // here to request the missing permissions, and then overriding
+                        //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                        //                                          int[] grantResults)
+                        // to handle the case where the user grants the permission. See the documentation
+                        // for ActivityCompat#requestPermissions for more details.
+
+                        ActivityCompat.requestPermissions(UpdateBandLocationActivity.this,
+                                new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION},
+                                MY_PERMISSIONS_LOCATION);
+
+                        return null;
+                    }
+
+                    locationManager.requestLocationUpdates(
+                            LocationManager.NETWORK_PROVIDER,
+                            MIN_TIME_BW_UPDATES,
+                            MIN_DISTANCE_CHANGE_FOR_UPDATES, this);
+                    Log.d("Network", "Network");
+                    if (locationManager != null) {
+                        location = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+                        if (location != null) {
+                            latitude = location.getLatitude();
+                            longitude = location.getLongitude();
+                        }
+                    }
+                }
+                // if GPS Enabled get lat/long using GPS Services
+                if (isGPSEnabled) {
+                    Log.e("Siva", "isGPSEnabled");
+                    if (location == null) {
+                        locationManager.requestLocationUpdates(
+                                LocationManager.GPS_PROVIDER,
+                                MIN_TIME_BW_UPDATES,
+                                MIN_DISTANCE_CHANGE_FOR_UPDATES, this);
+                        Log.d("GPS Enabled", "GPS Enabled");
+                        if (locationManager != null) {
+                            location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+                            if (location != null) {
+                                latitude = location.getLatitude();
+                                longitude = location.getLongitude();
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            Log.e("Siva", "getlocation Error-- > " + e.toString());
+        }
+
+        return location;
+    }
+
+    @TargetApi(Build.VERSION_CODES.M)
+    public void stopUsingGPS() {
+        if (locationManager != null) {
+            if (ActivityCompat.checkSelfPermission(UpdateBandLocationActivity.this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(UpdateBandLocationActivity.this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                // TODO: Consider calling
+                //    public void requestPermissions(@NonNull String[] permissions, int requestCode)
+                // here to request the missing permissions, and then overriding
+                //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                //                                          int[] grantResults)
+                // to handle the case where the user grants the permission. See the documentation
+                // for Activity#requestPermissions for more details.
+                return;
+            }
+            locationManager.removeUpdates(UpdateBandLocationActivity.this);
+        }
+    }
+
+    /**
+     * Function to show settings alert dialog
+     * On pressing Settings button will lauch Settings Options
+     */
+    public void showSettingsAlert() {
+        alertDialog = new AlertDialog.Builder(UpdateBandLocationActivity.this);
+        // Setting Dialog Title
+        alertDialog.setTitle("GPS is settings");
+        // Setting Dialog Message
+        alertDialog.setMessage("GPS is not enabled. Do you want to go to settings menu?");
+        // On pressing Settings button
+        alertDialog.setPositiveButton("Settings", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int which) {
+                Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+                UpdateBandLocationActivity.this.startActivity(intent);
+                dialog.cancel();
+            }
+        });
+
+        // on pressing cancel button
+        alertDialog.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.cancel();
+            }
+        });
+        // Showing Alert Message
+
+        changePassDialog = alertDialog.create();
+
+        try{
+            changePassDialog.cancel();
+        }catch (Exception e){
+            Log.e(TAG, "Problem with GPS Settings Alert --> "+e.toString());
+        }
+
+        changePassDialog.show();
+
+
+        /*if (!isGPSDialogShowing){
+            alertDialog.show();
+            isGPSDialogShowing = true;
+        }*/
+
+
+    }
+
+
+
+    /*@Override
+    public boolean onTouchEvent(MotionEvent event) {
+
+        int action = event.getActionMasked();
+        switch (action){
+            case MotionEvent.ACTION_DOWN:
+                isGPSDialogShowing = false;
+                Log.d(TAG, "Action was DOWN");
+                break;
+        }
+
+        return super.onTouchEvent(event);
+    }*/
+
+    @Override
+    public void onResume() {
+        super.onResume();
+
+        if (changePassDialog!=null && changePassDialog.isShowing()){
+            changePassDialog.dismiss();
+        }
+
+        if (!isGPSEnabled && !isNetworkEnabled) {
+            getLocation(UpdateBandLocationActivity.this);
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        isGPSDialogShowing = false;
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        isGPSDialogShowing = true;
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           String permissions[], int[] grantResults) {
+        switch (requestCode) {
+            case MY_PERMISSIONS_LOCATION: {
+                // If request is cancelled, the result arrays are empty.
+                Log.e(TAG, "onRequestPermissionsResult");
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+//                    if (!isGPSEnabled && !isNetworkEnabled) {
+//                        getLocation(UpdateBandLocationActivity.this);
+//                    }
+
+                } else {
+
+                    // permission denied, boo! Disable the
+                    // functionality that depends on this permission.
+                }
+                return;
+            }
+
+            // other 'case' lines to check for other
+            // permissions this app might request
+        }
+    }
+
+    public double getLatitude() {
+        return latitude;
+    }
+
+    public double getLongitude() {
+        return longitude;
+    }
+
+
+
 
 }

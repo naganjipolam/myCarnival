@@ -20,6 +20,8 @@ import com.techplicit.mycarnival.utils.RoundedCornersImage;
 import com.techplicit.mycarnival.utils.Utility;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 
 
 /**
@@ -27,6 +29,7 @@ import java.util.ArrayList;
  */
 public class CarnivalsListAdapter extends BaseAdapter implements Constants {
 
+    private static final String TAG = CarnivalsListAdapter.class.getName();
     private Context context;
     int[] galleryImages;
     LayoutInflater inflater;
@@ -43,6 +46,16 @@ public class CarnivalsListAdapter extends BaseAdapter implements Constants {
         this.carnivalsPojoArrayList = carnivalsPojoArrayList;
         inflater = (LayoutInflater)context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         imageLoader = new ImageLoader(context);
+
+        Collections.sort(this.carnivalsPojoArrayList, new Comparator<CarnivalsPojo>() {
+            public int compare(CarnivalsPojo dc1, CarnivalsPojo dc2) {
+                return dc1.getDateTime().compareTo(dc2.getDateTime());
+            }
+        });
+
+        Log.e(TAG, "carnivalsPojoArrayList sorting-->" + carnivalsPojoArrayList.toString());
+
+
     }
 
     @Override

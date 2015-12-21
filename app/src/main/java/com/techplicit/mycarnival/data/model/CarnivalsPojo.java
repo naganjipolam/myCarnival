@@ -1,11 +1,22 @@
 package com.techplicit.mycarnival.data.model;
 
+import android.util.Log;
+
+import com.techplicit.mycarnival.utils.Utility;
+
 import org.json.JSONObject;
+
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 /**
  * Created by pnaganjane001 on 17/12/15.
  */
-public class CarnivalsPojo {
+public class CarnivalsPojo implements Comparable<CarnivalsPojo> {
+
+    private static final String TAG = CarnivalsPojo.class.getName();
+    private Date dateTime;
 
     private String id, name, image, startDate, endDate;
     private boolean activeFlag;
@@ -17,6 +28,19 @@ public class CarnivalsPojo {
         this.startDate = jsonObject.optString(JsonMap.START_DATE);
         this.endDate = jsonObject.optString(JsonMap.END_DATE);
         this.activeFlag = jsonObject.optBoolean(JsonMap.ACTIVE_FLAG);
+
+        String dateStr = Utility.getDate(Long.valueOf(this.startDate), "dd/MM/yyyy");
+
+        DateFormat df = new SimpleDateFormat("dd/MM/yyyy");
+        try{
+            this.dateTime = df.parse(dateStr);
+        }
+        catch ( Exception ex ){
+            System.err.println(ex);
+        }
+
+        Log.e(TAG, "dateStr-->"+dateTime);
+
     }
 
     public String getId() {
@@ -65,6 +89,22 @@ public class CarnivalsPojo {
 
     public void setActiveFlag(boolean activeFlag) {
         this.activeFlag = activeFlag;
+    }
+
+
+    public Date getDateTime() {
+        return dateTime;
+    }
+
+    public void setDateTime(Date datetime) {
+        this.dateTime = datetime;
+    }
+
+    @Override
+    public int compareTo(CarnivalsPojo another) {
+        if (getDateTime() == null || another.getDateTime() == null)
+            return 0;
+        return getDateTime().compareTo(another.getDateTime());
     }
 
     private interface JsonMap{

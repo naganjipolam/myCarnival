@@ -16,7 +16,6 @@
             android:id="@+id/back_arrow_carnivals_list"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginLeft="@dimen/activity_horizontal_margin"
             android:padding="@dimen/activity_horizontal_margin"
             android:src="@drawable/back_arrow" />
     </RelativeLayout>

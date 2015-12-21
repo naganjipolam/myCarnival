@@ -9,7 +9,7 @@
     <dimen name="dp_56">56dp</dimen>
 
 
-    <dimen name="band_image_width_height">120dp</dimen>
+    <dimen name="band_image_width_height">130dp</dimen>
     <dimen name="band_list_item_margin">6dp</dimen>
     <dimen name="band_list_item_padding">5dp</dimen>
     <dimen name="band_list_item_title_margin_left">6dp</dimen>
